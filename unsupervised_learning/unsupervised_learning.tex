@@ -1,0 +1,576 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}{Definition}
+\title{Some notes on Machine Learning}
+\begin{document}
+\maketitle
+%\tableofcontents
+\section{Conventions}
+Let $X_{ij}$ be a $n\times p$ Matrix with $n$ samples and $p$ features.
+\begin{itemize}
+\item $X_{.j}=\sum_{i=1}^{n} X_{ij}$
+\item $X_{i.}=\sum_{j=1}^{p} X_{ij}$
+\end{itemize}
+
+\section{Some Basics}
+\begin{definition}[Metric] Let $X$ be a set. A metric is a map $d: X \times X \rightarrow \mathbb R_{\geq 0}$   $:\Leftrightarrow~\forall x,y \in X$ the following properties are fulfilled:
+\begin{enumerate}
+\item $d(x,y) = 0 \Leftrightarrow x=y$ 
+\item $d(x,y)=d(y,x)$ (symmetry)
+\item $d(x,y)\leq d(x,z)+d(z,y)$ (triangle inequality)
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[Norm] \label{def:norm}
+Let $V$ be a vector space. A  norm is a map $\lVert\cdot \rVert: V \rightarrow \mathbb R_{\geq 0}$   $:\Leftrightarrow~\forall x,y \in V$ and $\alpha \in \mathbb R$ the following properties are fulfilled:
+\begin{enumerate}
+\item $\lVert x \rVert \Leftrightarrow x=0$
+\item $\lVert \alpha x \rVert = \lvert \alpha \rvert \lVert x \rVert $
+\item $\lVert  x + y \rVert \leq \lvert x \rvert + \lVert y \rVert $ (triangle inequality)
+\end{enumerate}
+\end{definition}
+A pair $(V, \lVert \cdot \rVert)$ is called normed vector space.
+The notions of  norm and  metric are closely related. Every norm induces a metric.
+\begin{theorem} Let $(V, \lVert \cdot \rVert)$ be a normed vector space. Then  
+\begin{align} 
+ d(x,y) := \lVert x-y \rVert 	
+\end{align}
+is called the metric induced from the norm.
+\end{theorem}
+Note that not every metric is induced from a norm -- for example, the discrete metric in Eq. \ref{eq:disc_metric}. 
+
+One important norm is the so-called $p$-norm
+\begin{definition}[$p$-norm] Let $x\in \mathbb R ^n$ and $1\leq p < \infty$
+\begin{align}\label{eq:p-norm}
+\lVert x \rVert_p = \left(\sum_{i=1}^n \lvert x_i \rvert ^p \right)^{\frac{1}{p}}
+\end{align}
+\end{definition}
+It can be shown that for $1\leq p < \infty$ the $p$-norm is indeed a norm,
+i.e., obeys definition \ref{def:norm}. Furthermore, p-norms are equvalent norms.  However, for $0<p<1$ it is only a quasi-norm because the triangle inequality is no longer fulfilled.\footnote{However, for a quasi-norm  $\exists \lambda \in \mathbb R$ such that $\forall x, y \in X$ we have $\lVert x + y \rVert \leq \lambda \left ( \lVert x \rVert + \lVert  y\rVert \right)$  }
+
+
+\begin{definition}[Scalar product]
+Let $V$ be a vector space. A  scalar product is a map $\langle \cdot, \cdot \rangle: V \times V \rightarrow \mathbb R$   $:\Leftrightarrow~\forall x,y,z \in V$ and $\alpha, \beta \in \mathbb R$ the following properties are fulfilled:
+\begin{enumerate}
+\item $\langle x,x \rangle \geq 0$
+\item $\langle x,x \rangle  = 0  \Leftrightarrow x=0$
+\item $\langle \alpha x + \beta y, z \rangle = \alpha \langle x,z \rangle +  
+ \beta \langle y,z \rangle$
+\item $\langle x, y \rangle = \bar{\langle y, x \rangle }$
+\end{enumerate}
+\end{definition}
+A pair $(V, \langle \cdot, \cdot \rangle)$ is called inner product space. Inner product spaces are normed spaces are again related.
+\begin{theorem}
+Let  $(V, \langle \cdot, \cdot \rangle)$ be an inner product space. Then
+\begin{align}
+\lVert x \rVert = \sqrt{\langle x,x \rangle}
+\end{align}
+is the norm induced from the inner product.
+\end{theorem}
+
+\section{Dissimilarities and Similarities}
+Closely related to the concept of metric is the concept of dissimilarity. For details see Ref. \cite{vonLuxburg2004}, which contains also links between dissimilarity, similarity, and metric.
+\begin{definition}[Dissimilarity function] Let $X$ be a set. A dissimilarity function is a map $d: X \times X \rightarrow \mathbb R_{\geq 0}$   $:\Leftrightarrow~\forall x,y \in X$ the following properties are fulfilled  \cite{vonLuxburg2004}:
+\begin{enumerate}
+\item $d(x,y) = 0 \Leftrightarrow x=y$ 
+\end{enumerate}
+\end{definition}
+
+\section{Bayes' Rule}
+\begin{theorem}[Bayes]
+\begin{align}
+P(y|x) = \frac{P(x|y) P(y)}{P(x)}
+\end{align}
+\end{theorem}
+\begin{proof}
+Use $P(x,y) = P(x|y)P(y)= P(y|x)P(x)$
+\end{proof}
+\section{k-prototype algorithm}
+This method is suitable for clustering data sets, which contain both, numerical and categorical variables.
+The goal of cluster analysis is to partition the observations into groups
+(“clusters”) so that the pairwise dissimilarities between those assigned to
+the same cluster tend to be smaller than those in different clusters.
+
+Consider a feature space that consists of a (vector space) of numerical features $V$ and categorical features $C$,
+\begin{align}
+F &= V \times \mathcal C \\
+V &= \mathbb R^n\\
+C &= \mathcal C_1 \times \mathcal C_2 \times \dots \mathcal \times \mathcal C_d
+\end{align}
+In order to obtain a neighborhood-based clustering method for such a mixed type of feature space we first consider numerical and categorical variables individually. The former will lead to the k-means algorithm and the latter to the k-mode algorithm. Combining both algorithms will lead to the k-prototype algorithm. 
+
+\subsection{Formal setup}
+The most popular clustering algorithms directly assign each observation
+to a group or cluster without regard to a probability model describing the
+data. Each observation $x_i \in F$ is uniquely labeled by an integer $i \in \{1,\dots, N \}$. A prespecified number of clusters $K < N$ is postulated, and each cluster $C_k$ one is
+labeled by an integer $k \in \{1, \dots , K\}$.
+For each $x_i$ we introduce an indicator function with respect to  membership of cluster $C_k$,
+\begin{align}
+ r_{ik} = \begin{cases} 
+1 &  x_i \in C_k\\
+0 &   x_i \not\in C_k
+\end{cases}
+\end{align}
+This is also known as 1-of-k encoding, because a given data point may not belong to two distinct clusters. 
+
+In order to introduce a distance from a cluster to a datapoint, a prototype (sometimes also called cluster centroid or cluster center) $q_k$ for each cluster is introduced.  The distance between a data point $x_i$ and a cluster is then defined as the distance between data point and cluster prototype $d(x_i, q_k)$, where $d$ is sometimes also called distortion measure. This allows to define an objective function,
+\begin{align} \label{eq:cost_function}
+J = \sum _{k=1}^K \sum_{i=1} ^ N  r_{ik} d(x_i, q_k), 
+\end{align} 
+which contains  sums over all $N$ datapoints and $K$ clusters.
+The clustering algorithm is then just minimizing the cost function!
+
+For a fixed metric $d$, the cost function depends then on the centroids and the indicator function, $J=J(q, r)$. Eq. (\ref{eq:cost_function}) may be minimized  iteratively 
+\begin{enumerate}
+\item minimize $r$ keeping $q$ fixed
+\item minize $q$ keeping $r$ fixed
+\end{enumerate}
+The minimization of $r$ for a fixed metric $q$ may be obtained by
+\begin{align}
+r_{ik} = \begin{cases}
+1 & \text{if } k = \operatorname{argmin}_l d(x_i, q_l)  \\
+0 & \text{otherwise}.
+\end{cases}
+\end{align}
+Thus, each datapoint is assigned to the closes centroid with respect to the metric $d$. 
+ 
+The following algorithms are just different incarnation of minimizing the cost function $J$ for different dissimilarity measures.
+\subsection{K-means algorithm}
+Consider only numerical features, $F = \mathbb R^n$. Therfore, we have $x_i, q_k \in \mathbb R^n$ The metric for the cost function may be chosen by the squared euclidean distance ($2$-norm),
+\begin{align}
+d(x_i, q_l) = \rVert x_i -  q_l\rVert_2^2
+\end{align} 
+The cost function (\ref{eq:cost_function}) then assumes the form
+\begin{align} 
+J = \sum _{k=1}^K \sum_{i=1} ^ N  r_{ik} \rVert x_i -  q_k\rVert_2^2.
+\end{align} 
+The iterative solution from above is now of the form,
+\begin{enumerate}
+\item minimize $r$ keeping $q$ fixed:
+\begin{align}
+r_{ik} = \begin{cases}
+1 & \text{if } k = \operatorname{argmin}_l \rVert x_i -  q_l\rVert_2^2  \\
+0 & \text{otherwise}.
+\end{cases}
+\end{align}
+\item minize $q$ keeping $r$ fixed:
+\begin{align} \label{eq:k-means}
+q_k = \frac{\sum_{i=1}^N r_{ik}x_i}{\sum_{i=1}^N r_{ik}} = \frac{\sum_{i=1}^N r_{ik}x_i}{n_k}
+\end{align}
+with $n_k$ being the number of members in in $C_k$.
+\end{enumerate}
+\begin{proof}
+Consider  $q_{kj}$,  the $j$-th component of $q_k$. With this notation $x_{ij}$ is the $j$-th component of datapoint $i$.  Then,
+\begin{align*} 
+\frac{\partial J} {\partial q_{kj}} = -\sum_{i=1} ^N  2 r_{ik}  (x_{ij} - q_{kj})
+\overset{!}{=} 0 \Rightarrow  \sum_{i=1} ^N   r_{ik}  x_{ij}  = \sum_{i=1} ^N   r_{ik} q_{kj}
+\end{align*}
+\end{proof}
+Note that that Eq. (\ref{eq:k-means}) is just the mean of all datapoints in $C_k$. 
+\subsubsection{K-means  and categorical features using Gower }
+\textbf{TODO!!!}\\
+Within the k-means approach only numerical features are tractable.
+However, also treat categorical features using the Gower metric 
+\bibliographystyle{plain}
+\subsection{K-mode algorithm}
+Now consider the case of $M$ categorical features only, $F = \mathcal C = \mathcal C_1 \times \mathcal C_2 \times \dots \times \mathcal C_d$. Consider two data points $x_n,x_m  \in \mathcal C$, and thus, $x_{ni},y_{mi}  \in \mathcal C_i$.
+One dissimilarity measure on categorical variables is the so called simple matching \cite{Huang:1998, Huang97clusteringlarge} (sometimes also called discrete metric),
+\begin{align}
+d_1(x_n,x_m) &= \sum_{i=1}^d \delta(x_{ni}, y_{mi}) \\
+\delta(x_{ni}, y_{mi}) &= \begin{cases} \label{eq:disc_metric}
+0 & \text{if } x_{ni}=y_{mi} \\
+1 & \text{if } x_{ni} \neq y_{mi}.
+\end{cases}
+\end{align}
+So, $\delta(x_{ni}, y_{mi})$ measures the dissimilarity of the categorical feature $i$ for datapoints $x_n$ and $x_m$ and $d_1(x_n,x_m)$ is the sum over all $f$ categorical features. 
+The cost function (\ref{eq:cost_function}) then assumes the form
+\begin{align}  \label{eq:cost_function_modes}
+J = \sum _{k=1}^K \sum_{i=1} ^ N  r_{ik} d_1(x_i, q_k),
+\end{align} 
+where $q_k$ is the centroid of cluster $C_k$. The double sum runs over all $K$ centroids and $N$ data points.
+Again, we neet to evaluate the two optimization steps. To this end, we need a piece of theory \cite{Huang:1998}.
+\begin{itemize}
+\item define frequency here 
+\end{itemize}
+\begin{definition}
+Let $x = \{x_1, x_2 \dots, x_N \}$ be a sample, and let $s_i \in \mathcal  C$.
+\begin{itemize} 
+\item The \textbf{frequency} of $s_i$ given sample $x$ is defined as 
+\end{itemize}
+\end{definition}
+\begin{theorem}
+$q$ is a minimizer of the function
+\begin{align} \label{eq:minimizer_cat}
+\mathcal C \owns q' \mapsto \sum_{i=1} ^ N   d_1(x_i, q')
+\end{align}
+$\Leftrightarrow$ q is a mode of x, i.e., $f_r(q_{i} | x) \geq f_r(s_i | x), ~\forall s_i \in  \mathcal C_i, ~ \forall i \in 1 \dots d$.
+\end{theorem}
+\begin{proof}
+\begin{align*}
+\sum_{i=1} ^ N   d_1(x_i, q') = \sum_{j=1} ^ d  \sum_{i=1} ^ N   \delta(x_{ij}, q'_{j}) = \sum_{j=1} ^ d n (1 -f(q'_{j} |x) ). 
+\end{align*}
+Because $n(1 -f(q'_{j} |x)) \geq 0 $ for $1\leq j \leq  d$, Eq. (\ref{eq:minimizer_cat}) mininimizes $\Leftrightarrow$ each $n(1 -f(q'_{j} |x))$ minimizes individually. Thus,  $f(q'_{j})$ maximizes and therefore $q$ is a mode.
+\end{proof}
+So, $q$ is determined by assigning the most frequent attributes - but this is just the mode.  However, note that the mode is not unique. 
+
+\subsection{K-prototype Algorithm for $p$-norms}
+We have seen that the k-means algorithm hinges on the Euclidean norm. Because then the prototype of a cluster is the mean of the cluster. Here we study the k-prototype algorithm for p-norms from Eq. (\ref{eq:p-norm}).
+\begin{align*}
+\lVert x \rVert_p = \left(\sum_{i=1}^n \lvert x_i \rvert ^p \right)^{\frac{1}{p}}
+\end{align*}
+However, we extend the values for $p$, $0<p<\infty$. So, strictly speaking
+this is not a norm (in the case for $p<1$) but it is still a dissimilarity function.
+We consider the class of cost functions
+\begin{align} 
+J = \sum _{k=1}^K \sum_{i=1} ^ N  r_{ik} \rVert x_i -  q_k\rVert_p^m.
+\end{align} 
+So, for $m=p=2$ this reduces to the K-means. Before we go on, lets collect our basic assumptions:
+\begin{itemize}
+\item  K-means works with dissimilarities as well (then we are allowed to consider also $0<p<1$ values)
+\item K means also works with powers other than $m=2$.
+\end{itemize}
+These should be carefully checked at some point.
+For this generalization the K-prototype algorithm than assumes the form:
+
+\begin{enumerate}
+\item minimize $r$ keeping $q$ fixed:
+\begin{align}
+r_{ik} = \begin{cases}
+1 & \text{if } k = \operatorname{argmin}_l \rVert x_i -  q_l\rVert_p^m  \\
+0 & \text{otherwise}.
+\end{cases}
+\end{align}
+\item minize $q$ keeping $r$ fixed:
+$q_k$ needs to be determined numerically. No closed analytical solution may be found in general, because the absolute value part in the p-dissimilarity part (only for p even and $> 0$).
+
+\end{enumerate}
+
+
+
+\subsection{Determing the number of clusters}
+There are several methods to obtain the optimal number of clusters \cite{Liu:2010:UIC:1933307.1934597}, which are partially compiled in Table \ref{table:internal_clustering_validation_methods}.
+\begin{table}
+\centering
+\begin{tabular}{l r}
+\hline \hline
+Method & optimal value \\
+\hline
+Gap statistics & Elbow \\
+Silhouette index		& Max \\
+Dunn index				& Max \\
+Calinski-Harabasz index & Max \\
+Davies-Bouldin index 	& Min \\
+\hline \hline
+
+\end{tabular}
+\caption{\label{table:internal_clustering_validation_methods}Compilation of internal clustering validation measures 
+\cite{Liu:2010:UIC:1933307.1934597}.}
+\end{table}
+\paragraph{Gap statistics aka ellbow method:}
+In the above approaches $K$, the number of clusters enters as a parameter.
+In principle determining $K$ depends on the goal. For example, if we want to assign Costumers to $p$ given print campaigns then it is natural to choose $p=K$.  On the other hand, if we want to study the inherent clustering structure of a dataset we need a guideline for choosing $K$. 
+
+
+One way is to consider the (minimised) cost function $J(K)$ as function of the number of Clusters. $K$ is then selected where the cost function shows kinks (if there exist any).
+The rationale behind this idea is that one assumes that the data has some inherent clustering structure with $K^*$ clusters. For $K<K^*$ additional clusters would decrease the cost function (which is always monotonically decreasing with cluster size)  quite significantly because we approach the inherent cluster structures: $J_K<< J_{K+1}, \text{ for }  K < K^*$. For $K\geq K^* $ the decrease of the cost function should be much smaller, $J_K <J_{K+1}$  because  the additional sub-clusters should be close within an inherent cluster. Thus, at $K^*$ we are expecting a sharp peak in the successive differences of the cost function,  
+\begin{align}
+\{J_K - J_{K+1} | K<K^* \} <<  \{J_K - J_{K+1} | K \geq K^*\}
+\end{align}
+
+\textit{Gap statistics} further refines this idea and builds on $\log(J(K))$ \cite{tibshirani_gap_statistics}. It is also applicable for hierarchical clustering.
+
+\paragraph{Silhouette Coefficient:}
+
+\subsection{Missing values}
+In real life data often values are missing. Assume that we have an observation $x_i \in F$ with a missing value for attribute $x_{ij}$.  Some standard approaches in dealing with this problem are: \cite{hastie_element}
+\begin{itemize}
+\item Omit the contribution of Attribute $j$ to the dissimilarity  $d(x_i,x'_i)$ between the two objects $x_i, x'_i$. This is the most common approach. However, it may fail if both observations have no common values at all. Then the two observations could be deleted from the analysis.
+\item Missing values could be replaced by the mean or median of each attribute over the non-missing data.
+\item For categorical variables 'missing' could be interpreted as just another category. This is reasonable if one can consider two objects as similar if they have both missing values.
+\end{itemize}
+
+\section{Hyptothesis testing}
+\subsection{Analysis of variance: ANOVA}
+The t-test allows for a comparison of the means of two independent random samples (categories). The basic idea behind the t-test is to decide via the sample means if the two samples are significantly different. 
+
+However if the number of samples $I>2$, then the t-test is doomed to fail.  
+The ANOVA allows for $I>2$.
+\begin{definition}
+A \textbf{factor} is an independent variable that is contained in all $I$ categories. The $I$ individual categories are called \textbf{Factor levels}.
+ 
+\end{definition}
+\paragraph{Null-hypothesis.} The null hypothesis for ANOVA is that all samples have the same mean,
+\begin{align}
+H_0: ~ \mu_1=\mu_2=\dots\mu_I
+\end{align}
+\paragraph{Assumptions.}
+\begin{itemize}
+\item The random samples are independent
+\item All random samples have the same variance (variance homogeneity): $\sigma_i=\sigma ~ \forall i \in 1 \dots I$  
+\item The $i$th sample is a Normal distribution $\mathcal N(\mu_i, \sigma^2) ~ \forall i \in 1\dots I$
+\end{itemize}
+
+ 
+What happens if my data fail these assumptions?
+Firstly, don't panic! The first two of these assumptions are easily fixable, even if the last assumption is not. Lets go through the options as above:
+\begin{itemize}
+\item
+The one-way ANOVA is considered a robust test against the normality assumption. This means that it tolerates violations to its normality assumption rather well. As regards the normality of group data, the one-way ANOVA can tolerate data that is non-normal (skewed or kurtotic distributions) with only a small effect on the Type I error rate. However, platykurtosis can have a profound effect when your group sizes are small. This leaves you with two options: (1) transform your data using various algorithms so that the shape of your distributions become normally distributed or (2) choose the non-parametric Kruskal-Wallis H Test which does not require the assumption of normality.
+\item
+There are two tests that you can run that are applicable when the assumption of homogeneity of variances has been violated: (1) Welch or (2) Brown and Forsythe test. Alternatively, you could run a Kruskal-Wallis H Test. For most situations it has been shown that the Welch test is best. Both the Welch and Brown and Forsythe tests are available in SPSS Statistics (see our One-way ANOVA using SPSS Statistics guide).
+\item
+A lack of independence of cases has been stated as the most important assumptions to fail. Often, there is little you can do that offers a good solution to this problem. 
+ \end{itemize}
+ 
+\subsection{Kruskal Wallis} 
+The Kruskal Wallis (KW) test \cite{kruskal_wallis:1952} is a parameter free test. It tests whether independent samples come from the same underlying population.
+\begin{itemize}
+\item The KW test only answers the question if a sets of samples come from a joint population.
+\item Post-hoc tests are necessary to compare the sample sets pairwise and determine which of the samples are different. Such multiple hypothesis tests require a careful treatment of the familywise error rate via, e.g.,  the \v{S}id\'ak or Bonferroni method.
+\end{itemize}
+
+\section{Moment generating function}
+\begin{definition}[Moment generating function] \label{def_moment_generating_function}
+The moment generating function $M_X :  \mathbb R \rightarrow \mathbb R$
+of a real valued random variable $X$ over some probability space $(\Omega, \Sigma, P)$  
+is defined by
+\begin{align}
+M_X(t) = E_X(e^{tX}) =\int_{\Omega} e^{tx} dP,
+\end{align}
+where $E_X(\cdot)$ is the expectation value with respect to random variable $X$.
+\end{definition} 
+Apparently this is a function of $t$ and can be rewritten using the PDF $f_X(x)$,
+\begin{align}
+M_X(t)  =\int_{-\infty}^{\infty} e^{tx} f_X(x) dx,
+\end{align}
+
+\paragraph*{Generalisation to more than one dimension.} The generalisation of definition  \ref{def_moment_generating_function} to $l$ dimensions is straightforward by replacing $tX$ by the scalarproduct. Let $X=(X_1, X_2, \dots, X_l)$ and $M_X(t) = M_X(t_1, t_2, \dots t_l) $
+\begin{align}
+M_X(t) := E_X\left(e^{\langle X, t \rangle}\right)
+\end{align}
+
+\begin{theorem}[Moment generation]
+The $k$-th moment $m_k:=E(X^k)$ is generated by the $k$-fold derivative of $M_X(t)$
+\begin{align}
+m_k = \frac{d^k}{dt^k} M_X(t)  \bigg \rvert_{t=0}
+\end{align}
+\end{theorem}
+\begin{proof}
+We express the exponential in a Taylor series,
+\begin{align}
+M_X(t) = \int_{-\infty}^{\infty} \left[ 1+ tx + \frac{t^2}{2!}x^2 + \dots   \right] f(x) dx 
+\end{align}
+\end{proof}
+
+\paragraph*{Remark} Most of the time we are not interested in moments but rather in central moments (i.e., moments with respect to the mean). $\ln M_X(t)$ would generate these.
+
+\begin{theorem}[Independet variables] Let $X_i, i=1\dots n$ be $n$ independent random variables. Then $M_Y(t)$ for the sum $Y = \sum X_i$ factorizes,
+\begin{align}
+M_Y(t) = M_{X_1}(t) \dots M_{X_n}(t)
+\end{align}
+\end{theorem}
+\begin {proof}
+\begin{align*}
+M_Y(t) = E(e^{tY}) =  E(e^{tX_1}\dots e^{tX_n}) = E(e^{tX_1})\dots E(e^{tX_n}) =  M_{X_1}(t) \dots M_{X_n}(t)
+\end{align*}
+where we have used that for independent variables the expectation value factorizes.
+\end {proof}
+
+Now, we come to an interesting question: how much do we know about the underlying PDF once the MGF is computed? The answer is all of it!  This is really valuable because often it's much easier to deal with MGFs than with the PDF and in addition we get the moments for almost free.
+\begin{theorem}[Uniqueness]
+If the moment generating function exists in a neighbourhood of 0, then the PDF is uniquely determined.
+\end{theorem}
+More precisely let X and Y be random variables and $\exists ~ \varepsilon > 0 $ such MGFs $M_X(t), M_Y(t) < \infty$ for $t \in (-\varepsilon, \varepsilon)$. Then $f_X=f_Y \Leftrightarrow M_X(t) = M_Y(t) ~ \forall t \in (-\varepsilon, \varepsilon)$. A proof can be found in Ref.\cite{curtiss1942}.
+\section{Characteristic function}
+\begin{definition}[Characteristic function] \label{def_characteristic_function}
+The characteristic function $\Phi_X :  \mathbb R \rightarrow \mathbb C$
+of a real valued random variable $X$ over some probability space $(\Omega, \Sigma, P)$  
+is defined by
+\begin{align}
+\Phi_X(t) = E_X(e^{itX}) =\int_{\Omega} e^{itx} dP,
+\end{align}
+where $E_X(\cdot)$ is the expectation value with respect to random variable $X$.
+\end{definition} 
+So, it is essentially the Fourier transform. Alternatively, these expressions may be obtained via the CDF $F_X$, the PDF $f_X$, or in the discrete case: 
+\begin{itemize}
+\item via the CDF:  $\Phi_X(t) = \int_{-\infty}^{\infty} e^{itx} dF_X(x)$
+\item via the PDF:  $\Phi_X(t) = \int_{-\infty}^{\infty} e^{itx} f_X(x) dx$
+ \item discrete case: $\Phi_X(t) = \sum_k e^{itx_k} P(X=x_k)$
+\end{itemize}
+
+\paragraph*{Example standard-normal-distribution.} Let $X \sim  \mathcal N(0,1)$. Then the characteristic function is given by:
+\begin{align} \label{equ:std_normal_cf}
+\Phi_X (t) =e ^{-\frac{t^2}{2}},
+\end{align}
+\begin{proof}
+Instead of performing the complex integration of Definition \ref{def_characteristic_function} we rather use a beautiful trick by using the defintion of the cosine and constructing an ordinary differential equation (ODE). First plug in to the definition of the characteristic function
+\begin{align*}
+\Phi_X(t) &= \frac{1}{\sqrt{2\pi}}\int_{-\infty}^{\infty} e^{itx} e^{-\frac{x^2}{2}} dx \\
+& = \frac{1}{\sqrt{2\pi}}\int_{-\infty}^{0} e^{itx} e^{-\frac{x^2}{2}} dx + \frac{1}{\sqrt{2\pi}}\int_{0}^{\infty} e^{itx} e^{-\frac{x^2}{2}} dx \\
+& = -\frac{1}{\sqrt{2\pi}}\int_{\infty}^{0} e^{-itx} e^{-\frac{x^2}{2}} dx + \frac{1}{\sqrt{2\pi}}\int_{0}^{\infty} e^{itx} e^{-\frac{x^2}{2}} dx \\
+& =  \frac{1}{\sqrt{2\pi}}\int_{0}^{\infty} \left( e^{itx} + e^{-itx} \right)e^{-\frac{x^2}{2}} dx  = \frac{\sqrt 2 }{\sqrt{\pi}}\int_{0}^{\infty} \cos(tx) e^{-\frac{x^2}{2}} dx
+\end{align*}
+compute the dervative and integrate by parts
+\begin{align*}
+\frac{d}{dt} \Phi_X (t) &= - \frac{\sqrt 2 }{\sqrt{\pi}} \int_{0}^{\infty} \sin (tx) x e^{-\frac{x^2}{2}}dx \\
+  &=  \frac{\sqrt 2 } {\sqrt \pi}  \sin (tx)  e^{-\frac{x^2}{2}} \bigg \rvert_0^\infty  - \frac{\sqrt 2 }{\sqrt{\pi}} \int_{0}^{\infty} t \cos (tx)   e^{-\frac{x^2}{2}}dx \\
+  &= - t \Phi_X(t)
+\end{align*} 
+Thus we have the ODE $\frac{d}{dt} \Phi_X (t) = - t \Phi_X (t)$. The solution  is given by
+\begin{align} \label{equ:std_normal_cf_with_constant}
+\Phi_X (t) = c\,e ^{-\frac{t^2}{2}},
+\end{align}
+with some integration constant $c$. In order to determine $c$ we observe that $\Phi_X(0) = \frac{1}{\sqrt{2\pi}}\int_{-\infty}^{\infty} e^{-\frac{x^2}{2}} dx = 1$ because we are dealing with a gaussian PDF, which has to integrate to one. So, using $\Phi_X(0)=1$ in (\ref{equ:std_normal_cf_with_constant}) gives $c=1$. 
+\end{proof}
+\paragraph*{Generalisation to more than one dimension.} The generalisation of definition  \ref{def_characteristic_function} to $l$ dimensions is straightforward by replacing $tX$ by the scalarproduct. Let $X=(X_1, X_2, \dots, X_l)$ and $\Phi(t) = \Phi(t_1, t_2, \dots t_l) $
+\begin{align}
+\Phi_X(t) := E_X\left(e^{i\langle X, t \rangle}\right)
+\end{align}
+
+
+
+\subsection{Properties of the characteristic function}
+\begin{itemize}
+\item \textbf{Hermitesch.} 
+\begin{align}
+\Phi_X(-t) =  \overline{\Phi_X(t)} 
+\end{align}
+\item \textbf{Symmetry.} $X$ is real-valued $\Leftrightarrow X$ is symmetric
+i.e., $X$ and $-X$ have the same distribution.
+\item \textbf{Linear transformation} 
+\begin{align}
+\Phi_{aX+b}(t) = e^{itb} \Phi_{aX}(t) 
+\end{align}
+\item \textbf{Inversion.} If $\Phi_X$ is integrable, then the PDF may be reconstructed from the characteristic function
+\begin{align}
+f_X(x) = \int_{-\infty}^{\infty} e^{-itx} \Phi_X(t) dt
+\end{align}
+\item \textbf{Moment-generation.}
+\begin{align}
+m_k := E(X^k) = \frac{1}{i^k}\frac{d^k}{dt^ k} \Phi_X \bigg \rvert_{t=0}
+\end{align}
+\item \textbf{Convolution.} For independent random variables $X_1$, $X_2$ the characteristic function of the sum $Y=X_1 + X_2$ is given by\footnote{$E_Y(t) = E(e^{i(X_1+X_2)t}) = E(e^{iX_1t})E(e^{iX_2t})=\Phi_{X_1}(t)\Phi_{X_1}(t)$  }
+\begin{align}
+\Phi_Y(t) = \Phi_{X_1}(t)\Phi_{X_2}(t) 
+\end{align} 
+\end{itemize}
+\subsection{Relation to other generating functions}
+There are relationships between the characteristic function and other generating function such as the probability generating function, the moment generating function or the cumulant generating function.
+
+The probability generating function is defined over a $\mathbb N _0$ valued random variable $X$ as $m_X(t) = E(t^X)$. Therefore we have the relationship $m_X(e^{it})=\Phi_X(t) $.
+
+The moment generating function of a real (or complex) random variable is defined as  $M_X(t) = E(e^{tX})$. Therefore we have the relationship $M_{iX}(t)=M_X(it)=\Phi_X(t)$. This is of course only true if the moment generating function exists, which is not always the case in contrast to the characteristic function.
+\section{Probability distributions}
+\subsection{The $\Gamma$ function}
+The $\Gamma$ function on the real axis is defined as 
+\begin{align}
+\Gamma(x) = \int_0^\infty t^{x-1} e^{-t} dt
+\end{align}
+\subsection{The $\chi^2$ Distribution}
+We will follow http://www.real-statistics.com/chi-square-and-f-distributions/chi-square-distribution/chi-square-distribution-advanced/ here.
+
+\paragraph*{Motivation}
+There are several arguments why the $\chi^2$ distribution is important:
+\begin{itemize}
+\item The relation to   hypothesis testing 
+\item The $\chi^2$ distribution is closely related to squared standard-normal random variables.
+\end{itemize}
+
+Let's have a look at the second point. The $\chi^2$ distribution emerges from a sum of squared standard normal distributed random variables. Such squared random variables occur in estimations of sample-variances. As a consequence it will be an important distribution in estimating the goodness of a statistical model or confidence intervals based on empirical data. We will now derive as a motivation the  $\chi^2$ distribution in 1D.
+
+Let $Y$ be a random variable defined as $Y=X^2$, where $X\sim \mathcal N (0,1)$.
+Since $y$ is positive, we have for $y<0$: $P(Y<y)=0$. For $y \geq 0$ we have
+\begin{align*}
+P(Y<y) & = P(X^2 < y) = P(-\sqrt y < X < \sqrt y) \\
+& =  F_X(\sqrt y) - F_X(-\sqrt y) = 2 F_X(\sqrt y) -1 ,
+\end{align*}
+where $F_X$ is the CDF of $\mathcal{N}(0,1)$ The PDF is obtained by taking the derivative of $P(Y<y)$ with respect to $y$,
+\begin{align*}
+\frac{d}{d y} P(Y<y) & = \frac{2}{\sqrt{2\pi}}\frac{d}{dy} \int_{-\infty}^{\sqrt y} e ^{-\frac{t^2}{2}} dt \\
+					 & = \frac{\sqrt 2}{\sqrt{\pi}}e ^{-\frac{y}{2}} \frac{d}{dy} \sqrt y  \\
+					 & = \frac{1}{\sqrt{2 \pi}}e ^{-\frac{y}{2}} y ^{-\frac{1}{2}}  \\ 
+					 & = \frac{1}{\sqrt 2  \Gamma(\frac{1}{2})}e ^{-\frac{y}{2}} y ^{-\frac{1}{2}}
+\end{align*}
+
+In arbitrary dimensions the $\chi^2$ distribution assumes is defined as:
+
+\begin{definition}
+The PDF of the $\chi^2$ distribution is given by:
+\begin{align}
+f(x;k) = 
+\begin{cases}
+ \frac{x^{\frac{k}{2}-1} e^{-\frac{x}{2}}}{2^{\frac{k}{2}}\Gamma(\frac{k}{2})}, ~~ &x>0 \\
+ 0 		  &\text{else}
+\end{cases}
+\end{align}
+\end{definition}
+Where the parameter $k$  is called degrees of freedom.
+
+\begin{theorem} \label{thm_moment_generating_chi_squared}
+The moment generating function  of the $\chi^2$ distribution is given by 
+\begin{align*}
+M_x(t)=(1-2t)^{-\frac{k}{2}}
+\end{align*}
+\end{theorem}
+\begin{proof}
+\begin{align*}
+M_x(t)=\int_0^\infty e^{tx} f(x)dx = \int_0^\infty  \frac{x^{\frac{k}{2}-1} e^{-\frac{x}{2}(1-2t)}}{2^{\frac{k}{2}}\Gamma(\frac{k}{2})} dx.
+\end{align*}
+Substituting $y = \frac{x}{2}(1-2t)$, we get
+\begin{align*}
+M_x(t)= \frac{(1-2t)^{-\frac{k}{2}}}{\Gamma(\frac{k}{2})}\int_0^\infty y^{\frac{k}{2}-1} e^{-y} dy = (1-2t)^{-\frac{k}{2}},
+\end{align*}
+where we have used that $\Gamma(k/2)$ equals the integral (by definition).
+\end{proof}
+With this result we can easily calculate mean and variance via the first moments $m_i,~ i=1,2$ for the $\chi^2$ distribution,
+\begin{align}
+m_1 &= \frac{d M_x(t) }{dt} \bigg \rvert_{t=0} = k  \quad \Rightarrow \mu = m_1 = k\\
+m_2 &= \frac{d^2 M_x(t) }{dt^2} \bigg \rvert_{t=0} = k(k+2) \quad
+\Rightarrow \sigma^2 = m_2 - \mu^2 = 2k 
+\end{align}
+We have used for the variance $\sigma^2 = E((X-E(X))^2) =  E(X^2) - E(X)^2$. Alternatively - and prettier - one could have derived directly the generating function for the cumulants, $g_X(t) = \ln M_X(t)$.
+Furhtermore we have an additivity property. Let $x$ have $\chi^2(m)$ and $y$ have $\chi^2(n)$ distribution. Then $x+y$ has a $\chi^2(m+n)$ distribution. We calculate the MGF
+\begin{align}
+M_{x+y}(t) = M_x(t)M_y(t) = (1-2t)^{-\frac{m}{2}} (1-2t)^{-\frac{n}{2}} = (1-2t)^{-\frac{m+n}{2}}.
+\end{align}
+But this is the MGF of $\chi^2(m+n)$. Using the argument that the MGF uniquely determines the PDF this shows the claim.
+\begin{theorem}
+Let $X_n \sim \mathcal{N}(0,1)$ be a standard normal distributions of $k$ stochastically independent random variables. Then the sum of their squares distribution
+\begin{align*}
+ w = \sum _{n=1}^k X_n^2, 
+\end{align*}
+ obey a $\chi^2_k$ distribution.
+\end{theorem}
+\begin{proof}
+We will argue via the moment generating function and use the fact that the MGF uniquely determines the PDF.
+\begin{align}
+M_w(t) = M_{x_1^2+\dots+x_k^2}(t) =  M_{x_1^2}(t) \dots M_{x_k^2}(t) =  (M_{x^2}(t))^k,
+\end{align}
+which factorizes because the variables are independent.Thus, we need to calculate the MGF of $x^2$ with $X \sim \mathcal{N}(0,1)$.
+\begin{align*}
+M_{x^2}(t)  
+&=  \frac{1}{\sqrt{2\pi}} \int_{-\infty}^{\infty} e^{tx^2} e^{-\frac{x^2}{2}}dx \\
+&=  \frac{1}{\sqrt{2\pi}} \int_{-\infty}^{\infty}  e^{-\frac{x^2}{2}(1-2t)}dx \\ 
+&= (1-2t)^{-\frac{1}{2}}
+\end{align*}
+where we have substituted $y=x\sqrt{1-2t}$ and employed the property of $\mathcal N(0,1)$ that $ 1/\sqrt{2\pi} \int e^{-y^2/2} dy =1 $. Thus we have for the MGF
+\begin{align}
+M_w(t) = (M_{x^2}(t))^k = (1-2t)^{-\frac{k}{2}}
+\end{align}
+On the other hand, according to Theorem \ref{thm_moment_generating_chi_squared} this is the MGF of the $\chi^2$  distribution. Since the MGF uniquely determines the PDF it follows that $w$ has distribution $\chi^2$.
+\end{proof}
+
+\begin{itemize}
+\item Moment generating functions for $f(x)$, eg: $x^2$
+\item $\chi^2$ plots
+\item $\chi^2$ distance
+\item $\chi^2$ test
+\end{itemize} 
+
+\bibliography{papers}
+\end{document}
