@@ -1,0 +1,141 @@
+
+
+\section{Classical distributions}
+
+\paragraph*{Binomial distribution, $Bin(n,p)$.} Probability for the number of successes $x$ for $n$ IID bernoulli trials with chance of success $p$. The PMF is given by
+\begin{align}
+f(x|n,p) =  \binom {n} {x} p^x (1-p)^{n-x},
+\end{align}
+with mean $np$ and variance $np(1-p)$. \\
+
+\paragraph*{Gamma distribution, $\Gamma(\alpha, \beta)$.} 
+The $\Gamma$ has a rather generic form and contains the exponential distribution and chi-square distribution as special cases. In econometrics it is frequently used to model waiting times whereas in the Bayes framework it's mainly used as a conjugate prior for rate (inverse scale) parameters (occurring, e.g., in the Poisson or exponential distribution).
+The PDF of the  Gamma distribution is defined as: $x\geq0$, $\alpha, \beta > 0$
+\begin{align}\label{gamma_distri}
+ f(x|\alpha,\beta) = 
+ \frac{\beta^\alpha x^{\alpha -1} e^{-x\beta}}{\Gamma(\alpha)},
+\end{align}
+where $\Gamma(\alpha)$ is the \textbf{Gamma function}. It is the normalizing factor of the distribution to ensure that it integrates to one,
+\begin{align}\label{gamma_function}
+\Gamma(\alpha) = \int_0 ^\infty x^{\alpha -1} e^{-x}\, dx \\
+\Gamma(\alpha + 1) = \alpha \Gamma(\alpha).
+\end{align}
+The Gamma function can be viewed as a generalization of the factorial to non-integer numbers. That for $n\in  \mathbb N, ~ \Gamma(n) = (n-1)!$ can be seen from the recursion formula. The recursion formula is in general very helpful. It can be derived by partial integration, 
+$\partial_\alpha \Gamma(\alpha+1) = \int_0^\infty x^{\alpha}e^{-x}\, dx 
+= -x^{\alpha}e^{-x}  \Big|_0^\infty +\alpha \int_0^\infty x^{\alpha-1}e^{-x}\,dx = 0 + \alpha\Gamma(\alpha)$.
+
+Note that the Gamma function (\ref{gamma_function}) is indeed the normalization of the Gamma distribution (\ref{gamma_distri}). This can be seen by making the substitution $x\mapsto x\beta$ in the integration of Equation (\ref{gamma_distri}).
+
+\paragraph*{Beta distribution, $Beta(\alpha, \beta)$.} Is used to model distributions over probabilities because it has a very flexible form. The Beta distribution has the domain of definition $\alpha, \beta > 0, \theta \in [0,1]$ (some authors have the open interval for theta). The pdf is defined as.
+\begin{align}
+f(x|\alpha, \beta) = \frac{1}{B(\alpha, \beta)}x^{\alpha-1}(1-x)^{\beta-1}
+\end{align} 
+where $B$ is the \textbf{Beta function}. It just normalizes the Beta distribution and it is often more convenient to express it via the $\Gamma$ function.
+\begin{align}
+B(\alpha, \beta) = \int_0^1 x^{\alpha-1}(1-x)^{\beta-1}\,dx = \frac{\Gamma(\alpha) \Gamma(\beta)}{\Gamma(\alpha + \beta)}
+\end{align}
+The beta distribution has mean \footnote{To see the mean, we evalute the k-th moment $E(x^k) =  \frac{1}{B(\alpha, \beta)}\int x^{\alpha-1 + k}(1-x)^{\beta-1} dx$. Multiplying and dividing by $B(\alpha+k, \beta)$ the integrand gets one and we get $E(x^k) = \frac{B(\alpha+k, \beta)}{B(\alpha+k, \beta)}$ The mean is given for $k=1$. Rewriting in terms of the $\Gamma$ function  we get, $E(x) = \frac{\Gamma(\alpha + \beta)}{\Gamma(\alpha) \Gamma(\beta)} \frac{\Gamma(\alpha + 1) \Gamma(\beta)}{\Gamma(\alpha+\beta+1)} = \frac{\alpha}{\alpha+\beta}$} 
+$\frac{\alpha}{\alpha + \beta}$ and variance $\frac{\alpha \beta}{(\alpha+\beta)^2 (\alpha+\beta+1)} $. For $\alpha, \beta > 1$ the maximum is given by $\frac{\alpha-1}{\alpha+\beta -2}$. 
+
+\paragraph*{Poisson distribution,} $Poi(\lambda)$. Is used to model  the number of events $k$ ('counts') in a fixed (time) interval. The pmf is defined as 
+\begin{align}
+f(k|\lambda) = \frac{\lambda^k e^{-\lambda}}{k!}, \quad k\in \mathbb{N}, \lambda \in \mathbb{R}_{>0},
+\end{align} 
+where $\lambda$ is the event rate or rate parameter. It describes the expected number of events per interval (indeed it is also the expectation value of the Poisson distribution).
+
+\subsubsection*{Multivariate Normal distribution}
+\begin{align}
+\mathcal{N}(\mu, \Sigma) &= p(x|\mu, \Sigma) \\ 
+ &= -\frac{1}{\sqrt{\det(2\pi\Sigma)}}e^{-\frac{1}{2}(x-\mu)^\intercal \Sigma^{-1} (x-\mu)},
+\end{align}
+with mean vector $\mu$, covariance matrix $\Sigma$ and its inverse the  precision matrix $\Sigma^{-1}$.
+It can be shown that,
+\begin{align}
+\mu &= \langle x \rangle_{\mathcal{N}(\mu, \Sigma)} \\ 
+\Sigma &= \langle (x-\mu) (x-\mu)^ \intercal ) \rangle_{\mathcal{N}(\mu, \Sigma)} \\ 
+\end{align}
+
+\paragraph*{Transformations}
+\begin{itemize}
+\item $y=Ax$
+\end{itemize}
+Let $x\sim \mathcal{N}(\mu, \Sigma)$ and $A$ be a regular  Matrix (i.e, non-singular, $\det(A)\neq 0 $). Then under the  transformtion $y=Ax$,  $y$ is again normally distributed, $y \sim \mathcal{N}(A\mu, A\Sigma A^\intercal)$.
+\begin{proof}
+Using the transformation law with jacobian $\det(A)$ gives 
+\begin{align*}
+f_Y(y) &= \frac{f_X(A^{-1}y)}{\det(A)} \\
+&= \frac{1}{\det(A) \sqrt{2\pi\Sigma}} e^{-\frac{1}{2} (A^{-1}y-\mu)^\intercal \Sigma^{-1} (A^{-1}y-\mu)} \\
+&=  \frac{1}{\sqrt{2\pi\Sigma_y}} e^{-\frac{1}{2} (y-A\mu)^\intercal \Sigma_y^{-1} (y-A\mu)},
+\end{align*}
+where we have used $\mu = 1 \mu = A^{-1} A \mu$ and identified $\Sigma_y^{-1} = A ^{-1\intercal} \Sigma^{-1} A^{-1}$ and therefore $\Sigma_y = A \Sigma A^\intercal$ 
+
+\end{proof}
+\begin{itemize}
+\item $z=x + y$
+\end{itemize}
+Let $x\sim \mathcal{N}(\mu_x, \Sigma_x)$ and $y\sim \mathcal{N}(\mu_y, \Sigma_y)$ be two independent Normal distributions $x$. Then $z=x+y$ is again normally distributed with $z \sim \mathcal{N}(\mu_x + \mu_y, \Sigma_x + \Sigma_y)$
+
+
+\begin{proof}
+By Theorem \ref{thm:sum_rv} we have for the pdf
+\begin{align}
+&f_{X+Y}(z) 
+= f_X(x) \star f_Y(y) = \int f_X(z - y)f_Y(y)\,dy  \\
+&= \frac{1}{\sqrt{\det (2\pi \Sigma_x)}\sqrt{\det (2\pi \Sigma_y)}} \int  e ^ {-\frac{1}{2}\left[(z-y-\mu_x)^\intercal \Sigma_x^{-1} (z-y-\mu_x)+ (y - \mu_y)^\intercal\Sigma_y^{-1} (y - \mu_y)\right]} \,dy
+\label{eq:sum_normal_intermediate0}
+\end{align}
+We focus on the square bracket in the exponent, define the quantities $\bar y = y - \mu_y$, $\bar z = z - \mu_x - \mu_y$, and proceed by completing the square with respect to $y$.
+\begin{align}
+[\cdot] 
+&= \bar y^\intercal\Sigma_y^{-1} \bar y + (\bar y - \bar z )^\intercal\Sigma_x^{-1} (\bar y - \bar z) \\
+&= \bar y^\intercal(\Sigma_y ^{-1} + \Sigma_x ^{-1}) \bar y  - 2 {\bar z} ^ \intercal\Sigma_x ^{-1} \bar y + \bar z^\intercal  \Sigma_x ^{-1} \bar z  \label{eq:sum_normal_intermediate1}
+\end{align}
+In order to complete the squere, note that both $\Sigma$ are symmetric and invertible. Therefore, also the inverse is symmetric and their (inverse) sum is symmetric and invertible. Now, set $\tilde \Sigma ^{-1}:= \Sigma_y ^{-1} + \Sigma_x ^{-1}$ and consider the term 
+\begin{align*}
+(\bar y - \tilde \Sigma \Sigma_x^{-1}\bar z)^\intercal \tilde \Sigma ^{-1} (\bar y - \tilde \Sigma \Sigma_x^{-1}\bar z) 
+= \bar y ^\intercal \tilde \Sigma ^{-1} \bar y 
+- 2  {\bar z} ^ \intercal\Sigma_x ^{-1} \bar y
++ \bar z^\intercal \Sigma_x^{-1} \tilde \Sigma  \Sigma_x^{-1} \bar z
+\end{align*}
+Rearranging this identity and plugging it into expression (\ref{eq:sum_normal_intermediate1}), gives
+\begin{align}
+[\cdot] & = (\bar y - \tilde \Sigma \Sigma_x^{-1}\bar z)^\intercal \tilde \Sigma ^{-1} (\bar y - \tilde \Sigma \Sigma_x^{-1}\bar z) - \bar z^\intercal \Sigma_x^{-1} \tilde \Sigma  \Sigma_x^{-1} \bar z  + \bar z^\intercal  \Sigma_x ^{-1} \bar z \label{eq_matrix_normal_2}\\ 
+&= (\bar y - \tilde \Sigma \Sigma_x^{-1}\bar z)^\intercal \tilde \Sigma ^{-1} (\bar y - \tilde \Sigma \Sigma_x^{-1}\bar z) + \bar z^\intercal (\Sigma_x + \Sigma_y)^{-1} \bar z,
+\end{align}
+where in the last step the useful Matrix identities\footnote{Let $X, Y$ be regualar matrices. Then:
+\begin{align} \label{eq:matrix_id_1}
+X^{-1}(X^{-1} + Y^{-1})^{-1}Y^{-1} = (X+Y)^{-1}.
+\end{align}
+Set the left hand side $Z:=X^{-1}(X^{-1} + Y^{-1})^{-1}Y^{-1}$. Its inverse is apparently $Z^{-1} =  X + Y$ Therefore,  $Z =  (X + Y)^{-1}$. The second matrix identity reads
+\begin{align} 
+X^{-1}  - X^{-1}(X^{-1} + Y^{-1})^{-1}X^{-1} = (X+Y)^{-1}.
+\end{align}
+The left hand side can be rewritten as $X^{-1}  - X^{-1}(X^{-1} + Y^{-1})^{-1}(X^{-1}\pm Y^{-1}) = X^{-1}(X^{-1} + Y^{-1})^{-1}Y^{-1} = (X+Y)^{-1 }$, where in the last step identity (\ref{eq:matrix_id_1}) was used.} were used. We can now plug this expression back into (\ref{eq:sum_normal_intermediate0}). Unter the integral the first term evaluates to $\sqrt{\det(2\pi\tilde\Sigma)}, \forall \bar z$. Taking into account that $\det\tilde \Sigma /  (\det\Sigma_x\det  \Sigma_y) = 1 / \det(\Sigma_x(\Sigma_x^{-1}+\Sigma_y^{-1})\Sigma_y) = 1/\det(\Sigma_x+\Sigma_y)$ eventually gives 
+\begin{align}
+ (\ref{eq:sum_normal_intermediate0})  
+ &= 
+ \frac{\sqrt{\det(2\pi\tilde\Sigma)}}{\sqrt{\det(2\pi\Sigma_x)\det(2\pi\Sigma_x)}} 
+  e^{-\frac{1}{2} (z-\mu_x - \mu_y)^\intercal (\Sigma_x + \Sigma_y)^{-1}(z-\mu_x - \mu_y) } \\ 
+  &=\frac{1}{\sqrt{\det(2\pi(\Sigma_x+\Sigma_y))}} e^{-\frac{1}{2} (z-\mu_x - \mu_y)^\intercal (\Sigma_x + \Sigma_y)^{-1}(z-\mu_x - \mu_y) }  \\
+  &= \mathcal{N}(\mu_x + \mu_y, \Sigma_x + \Sigma_y)
+\end{align}
+\end{proof}
+\paragraph*{Remark} 
+A somewhat less matrix-magic approach ist to pause the computation at equation (\ref{eq_matrix_normal_2}) and realizing that this already establishes a quadratic form in $\bar z$ and thus a normal distribution in $z$. In order to get the expressions vor $\mu_z$ and $\Sigma_z$ one could alternatively calculate them by using the linearity property of the expectation value together with the independence assumption $f_{X,Y}(x,y)=f_X(x)f_Y(y)$:
+\begin{align}
+\mu_z = \langle z \rangle =\iint f_X(x)f_Y(y) (x+y)\, dx\,dy =\langle x \rangle + \langle y \rangle  = \mu_x + \mu_y
+\end{align}
+\begin{align}
+\Sigma_z &= \langle(x+y-\mu_x - \mu_y)(x+y-\mu_x - \mu_y)^\intercal\rangle  \\ 
+&= \langle (x-\mu_x)(x - \mu_x)^\intercal \rangle +  \langle (y-\mu_y)(y - \mu_y)^\intercal \rangle + 2\langle (x-\mu_x)(y - \mu_y)^\intercal \rangle  \\
+&= \langle (x-\mu_x)(x - \mu_x)^\intercal \rangle +  \langle (y-\mu_y)(y - \mu_y)^\intercal \rangle,
+\end{align}
+where the symmetry of $\Sigma$ was used (factor 2) and the last term vanishes because of independence ($\iint f_X(x)f_Y(y) (x-\mu_x)(x-\mu_x)^\intercal = 0$).
+\begin{itemize}
+\item $z=Ax + y$
+\end{itemize}
+Let $x\sim \mathcal{N}(\mu_x, \Sigma_x)$ and $y\sim \mathcal{N}(\mu_y, \Sigma_y)$ be two independent Normal distributions $x$. Then $z=Ax+y$  with $A$ being a regular matrix is again normally distributed with $z \sim \mathcal{N}(A\mu_x + \mu_y,  A\Sigma_xA^\intercal+\Sigma_x)$
+
+\begin{proof}
+This follows immeadiatly by composition of the above results. Set $\tilde x =  Ax$. Then $z = \tilde x + y \sim \mathcal{N}(\mu_{\tilde{x}} + \mu_y, \Sigma_{\tilde{x}} + \Sigma_y ) = \mathcal{N} (A\mu_{x} + \mu_y, A \Sigma_{x} A^\intercal + \Sigma_y ) $
+\end{proof}

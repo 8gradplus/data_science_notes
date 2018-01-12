@@ -1,0 +1,38 @@
+\section{Basics}
+\begin{itemize}
+\item Formal definition of a random variable
+\item independence and conditional independence
+\end{itemize}
+Event $x$ and $y$ are  \textit{independent }$:\Leftrightarrow$ their joint distribution  factorizes $p(x,y)=p(x)p(y)$
+The probability of an event $x$ conditioned on knowing event $y$  is called \textit{conditional probability}, $p(x|y) :=  \frac{p(x,y)}{p(y)}$
+We also say the probability of $x$ given $y$. If $p(x)=0$ then $p(x|y)$ is not defined.
+From this together with $p(x,y) = p(y,x)$ follows Bayes' rule.
+\begin{theorem}[Bayes' rule]
+\begin{align}
+p(x|y) :=  \frac{p(y|x) p (x)}{p(y)}
+\end{align}
+\end{theorem} 
+\paragraph{Indepenent and identically distributed.} This is a very common assumption. It is closely related to the notion of symmetry and exchangeable random variables, which eventually leads to the heart of statistical problems: how to characterize joint probabilities. This is turn is closely related to De Fetti's theorem \cite{barber}. However, for the time beeing we simple state its practical implication. Consider a variable $x$ and $n$ observations $x_1 \dots x_n$ of that variable. They are called  independent and identically distributed (IID) $:\Leftrightarrow$ if their joint probability factorizes.
+\begin{align}
+p(x_1, \dots, x_n) = \prod _ {i = 1} ^ n p(x_i)
+\end{align}
+Independent refers to the factorization is just the definition above. Identical means that each observation is drawn from the same underlying distribution.  
+
+\paragraph*{Bayes' Inference.} The basic idea is to use Bayes' rule to obtain a distribution over the underlying model parameters of a random process. Let there be given a probability distribution $p(x|\theta)$, which is parametrized by $\theta \in \Theta$ with some parameter space $\Theta$ \footnote{Here we are inconsistent in our notation, because capitals usually is reserved for random variables, whereas here it is some parameter space}. For a set of $n$ observed data points $X=\{x_1,\dots, x_n\}$ Bayes' rule then reads:
+\begin{align} \label{bayes_inference}
+p(\theta|X) = \frac{p(X|\theta)p(\theta)}{p(X)}
+\end{align}
+The term $p(\theta|X)$ is called posterior distribution.
+
+\paragraph*{Likelihood}
+The term $p(X|\theta)$  in  (\ref{bayes_inference}) is called likelihood. It describes the probability of the data given the model, which is determined by the (fixed) model parameters $\theta$. How the likelihood is chosen is determined by the underlying random process. A common simplification is to assume IID observations, $p(X|\theta) = p(x_1, \dots, x_n|\theta) =   \prod _i  p(x_i | \theta)$. 
+
+Sometimes it is convenient to work with the logarithm of the likelihood (log-likelihood). In the case of IID observations we get $\sum _i \log p(x_i | \theta)$. The log-likelihood is used if one tries to optimise the likelihood rather than the posterior with respect to $\theta$. Since the log is a strictly monotonic function the optimum remains invariant \footnote{consider a strictly monotonic, differentiable function g and a differentiable function g. Then $(g \circ f) '  = g'\circ f \cdot f'$. Since g is strictly monotonic $g' >0 $. Therefore the maximum of  $g \circ f$ is given by the maximum of $f$.}. The advantage is now that solving for $\theta$ is often easier for the log-likelihood than for the likelihood. 
+
+\paragraph*{Maximum likelihood.} Instead of working with the full expression \ref{bayes_inference} when inferring $\theta$ one often works directly with the likelihood,
+\begin{align}
+\hat \theta = \text{arg sup}_\theta p(X|\theta).
+\end{align}
+This is eventually an manifestation of the likelihood principle \cite{robert}. Beside the advantages (eg, parametrization invariance, asympotitic properties) the maximum likelihood also has several drawbacks: in high dimensions it can be computationally complex to find the maximum or there could be more local maxima. Furthermore, there is no decision-theoretic and probabilistic support for this approach. In particular,  the map $\theta \mapsto p(X|\theta)$ is not a PDF over $\theta$ (whereas it is one for $p(\theta|X)$). This is a general property of conditional probabilities.\footnote{Consider 
+a joint distribution $p(x, \theta)$ with constant marginals, $p(x) = \int p(x,\theta)\, d \theta =1/k$ on the interval $x = [0,k]$ and  $p(\theta) = \int p(x,\theta)\, d \theta =1/c$  on the interval $\theta = [0,c]$ with $k\neq c$.  Assume that the map $\theta \mapsto p(x|\theta)$ is a PDF. Then, $\forall x$  $1=\int_0^c p(x|\theta) \, d \theta = \int_0^c\frac{p(x,\theta)}{p(\theta)}\, d\theta =  c \int_0^cp(x,\theta)\, d\theta = c p(x) = \frac{c}{k} \neq 1$.}
+

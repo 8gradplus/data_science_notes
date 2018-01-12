@@ -1,0 +1,70 @@
+\section{Information Theory}
+\paragraph*{Outlook.} This should also go into this section 
+\begin{itemize}
+\item definition of equivalent parametrization
+\item Conditional Information
+\item derivation of Jeffrey's prior
+\item Flat vs Non-Informative Priors (high dimensional example)
+\end{itemize}
+ and $p$. \cite{barber}
+ 
+\paragraph{Fisher information.}
+\begin{definition}[Fisher information matrix] Assume that for the likelihood function $f(x|\theta)$, $\theta \in \mathbb{R}^n$ the FI regularity conditions hold \cite{schervish}. The Fisher information matrix is the covariance matrix with respect to the score function
+\begin{align*}
+I_{ij}(\theta) :=  \mathbb{E}_\theta \left[ \frac{\partial^2}{\partial \theta_i\partial \theta_j} \log f(x|\theta) \right], 
+\end{align*}
+where $\partial / \partial \theta_i \log f(x|\theta)$ is the $i$-th component of the score function. 
+\end{definition} 
+The fisher information depends on which of the several possible equivalent parametrizations is chosen. 
+
+\begin{definition}[Jeffrey's Prior distribution] 
+\begin{align*}
+f(\theta) = c\, \sqrt{\det I},
+\end{align*}
+where $I$ is the Fisher information matrix and c is chosen such that $f(\theta)$ integrates to one if possible.  
+\end{definition} 
+If no such $c$ exists, then the  distribution $f(\theta)=\sqrt{\det I}$ is often used as improper prior distribution \cite{schervish}.
+In the one dimensional case the fisher information becomes the second moment of the score function and Jeffreys prior is the square root of it. \textbf{Check: is the formular below really true (2nd derivative instead of square instead). }
+\begin{align}
+I(\theta)&=\mathbb{E}_\theta \left[\left( \frac{\partial \log f(x|\theta)}{\partial \theta}  \right) ^2\right] \\
+f(\theta)&= c\, \sqrt{I}
+\end{align} 
+
+\paragraph{Example: Binomial distribution.}Suppose $X\sim Bin(n,p)$ given $P=p$ for a fixed $n$. Then, the Fisher information is obtained by
+\begin{align*}
+f_{X|P}(x|p) &=  \binom {n} {x} p^x (1-p)^{n-x}, \quad x=0,1,\dots, n \\
+\partial_p(\log f_{X|P}(x|p)) &= \frac{x-np}{p(1-p)} \\
+I(p) &= \frac{n}{p(1-p)},
+\end{align*}
+where we have used that the mean of the Binomial distribution is $np$ and that the variance of the Binomial distribution $\mathbb{E}\left[(x-\mu)^2\right] = np(1-p)$.
+And Jeffrey's prior becomes,
+\begin{align*}
+f(p) \propto \sqrt{I} = n\, p^{-\frac{1}{2}}p^{-\frac{1}{2}} \propto Beta\left(1/2,1/2\right).
+\end{align*}
+Therefore, the $Beta(1/2, 1/2)$ distribution is a proper non-informative prior to the Binomial distribution. Note that the Beta distribution is also the conjugate prior to the Binomial distribution.
+
+\paragraph*{Example: Poisson distribution.} Suppose $X\sim Poi(\lambda)$. The Fisher information is then 
+\begin{align*}
+f(x|\lambda) &= \frac{\lambda ^xe^{-\lambda}}{x!} \\
+\partial_\lambda \log f(x|\lambda)  &=  \frac{x-\lambda}{\lambda} \\
+I(\lambda) &= \frac{1}{\lambda^2}\mathbb{E}\left[(x-\lambda)^2\right] = \frac{1}{\lambda},
+\end{align*}
+where the formula for variance of the Poisson distribution, $\mathbb{E}\left[(x-\lambda)^2  \right] = \lambda$ was used. The Jeffrey's prior is thus,
+\begin{align*}
+f(\lambda) \propto \sqrt{I} = \lambda^{-\frac{1}{2}} \propto \Gamma(1/2, 0).
+\end{align*}
+This seems a bit odd because $\beta=0$ would lead to the constant zero for the $\Gamma$ distribution. However, since we are only interested in the proportionality, we can drop the $\beta^\alpha$ term in the Gamma distribution before setting the values. So, Jeffrey's Prior is an improper Gamma distribution. Improper because $\lambda^{-\frac{1}{1}}$ cannot be normalized. However, it is also of the same form as the conjugate prior. In real application it must be however ensured, that the posterior is a proper distribution. For this case this will be the case as soon as some observations have been made.
+
+In summary the Jeffrey's prior is obtained be requiring invariance under a certain map on the likelihood. It is somewhat against the Baysian mind set where one first chooses a prior on the $\theta$ and then uses the likelihood in order to derive the posterior.
+
+\paragraph{Kullback-Leibler divergence.} The Kullback-Leibler (KL) divergence measures the 'difference' between two distributions $q$ and $p$ \cite{barber}.This measure of information is designed to measure
+how far apart two distributions are in the sense of likelihood. That is, if
+an observation were to come from one of the distributions, how likely is
+it that you could tell that the observation did not come from the other
+distribution? \cite{schervish}
+\begin{definition}[Kullback-Leibler Information]
+\begin{align}
+KL(q|p) := \langle \log \,q(x) - \log \,p (x)\rangle_{q(x)}  
+\end{align}
+\end{definition}
+In general $KL(q|p) \geq 0$ and $KL(q|p) = 0   \Leftrightarrow q(x) = p(x)$ (in the sense that the respective probability measures have to be equal). However the KL is not a metric, because $KL(q|p) \neq KL(p|q)$. Even in the symmetrized case (which is sometimes itself called Kl divergence),  $KL(q|p) + KL(p|q)$, the triangle inequality does not hold. 
