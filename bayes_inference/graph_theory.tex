@@ -1,24 +1,65 @@
 \section{Graph theory}
-\subsection{Basic definitions}
+We recap the basics of graph theory. \cite{MAL-001, Bollobas98a}
+
+\paragraph*{Graph.} A graph $G=(V,E)$ consistes of a set $V = \{1, \dots, m\}$ of vertices  and a set  $E \subseteq V\times V$  of edges.  So each edge consists of a pair of vertices $(s,t) \in E$.  For an \textit{undirected} graph there is no distinction between $(s,t)$ and $(t,s)$. In a \textit{directed} graph the edge orientation is distinguished, which is emphasised by the notation $(s \rightarrow t) := (s,t)$.
+
+\textit{Remark:} By definition a graph does not contain self-loops as edges $(s,s)\notin E, ~ \forall s \in V$ nor does it contain multiple copies of the same vertex. This may be included within the framework of multigraphs.
+
+\paragraph*{Subgraph.} A subgraph $G'=(V',E')$ of a given graph $G=(V,E)$  is a graph such that $V' \subseteq V$ and $E' \subseteq E$. 
+Given a vertex subset $V'\subseteq V$ of $G=(V,E)$, the \textit{vertex-induced subgraph} $G'(V')=(V', E(V'))$  has the edge set $E(V') = \{(s,t) \in E | s,t \in V' \}$. 
+Given an edge subset $E' \subseteq E$ of $G=(V,E)$, the \textit{edge-induced subgraph} $G'(E')=(V(E'), E')$ has vertex set $V(E') = \{s \in V | (s,t) \in E' \}$  
+
+\paragraph*{Path.} A path $P=(V(P), E(P))$ is a graph with vertex set $V(P)=\{v_0, \dots v_k\}$ and edge set $V(P)=\{(v_0, v_1), (v_1,v_2) \dots(v_{k-1}, v_k)\}$. The path joins vertex $v_0$ to vertex $v_k$. Of special interest are paths that are subgraphs of a given Graph $G=(V,E): ~ V(P)\subseteq V, ~ E(P)\subseteq E $. 
+
+\paragraph*{Cycle.} A cylcle $C = (V(C), E(C))$ is a graph with vertex set $V(C)=\{v_0, \dots v_k\}$ and edge set $E(C)=\{(v_0, v_1), (v_1,v_2) \dots(v_{k-1}, v_k), \dots(v_k, v_0) \}$. An undirected graph is acyclic if it contains no cycles.
+\paragraph*{Bipartite.} A graph $G=(V,E)$ is bipartite if its vertex set can be partitioned as a disjoint union $V = V_a \dot \cup V_b$ such that $(s,t) \in E \Rightarrow s \in V_a, t \in V_b $ (or vice versa).
+\paragraph*{Clique.} A clique of a graph $G=(V,E)$ is a subset of vertices $V'\subseteq V$  that are all joined by vertices, $(s,t) \in E ~ \forall s, t \in V'$. A clique $V'$ is maximal if there is no vertex $v \in V \setminus V'$ such that $V \cup \{v\}$ is a clique.
+
+\textit{Remark:} Sometimes maximal cliques are just called cliques and non-maximal cliques are calle cliquos.
+\paragraph*{Chord.} Given a cylce C with vertex set $V(C)=\{v_0, \dots v_k\}$  and edge set $E(C)=\{(v_0, v_1), (v_1,v_2) \dots(v_{k-1}, v_k), \dots(v_k, v_0) \}$. A chord is an edge that is not part  of $E(C)$. Given a Graph $G=(V,E)$ and a cycle C of length four or greater.  $C$ is \textit{chordless} if the edge set $E$ of $G$ contains no chords for $C$.
+\paragraph*{Triangulated.} A graph is triangulated if it contains no chordless cycles (of length four or greater).
+ 
+\paragraph*{Connected component.} A connected component of a graph $G=(V,E)$ is a subset of vertices $ V' \subseteq V$ such that $\forall ~ s, t \in V'$, there exists a path in  $G$ joining s to t. A graph is $singly connected$ if it consists of a single connected component.
+
+\paragraph*{Tree.} A tree is an  acyclic singly connected graph. It can be shown that a tree with $m$ verices must have $m-1$ edges.  
+
+\paragraph*{Forest.} A forest is an acyclic graph consisting of one or more connected components.
+
+\paragraph*{Hypergraph.} A hypergraph is $G = (V, E)$ 
+consists of a vertex set $V = \{1, 2, . . . , m\}$, and a set $E$ of hyperedges, with $ E \ni h \subset V$. So, each hyperedge  is a particular subset of $V$. In particular, an ordinary graph is a hypergraph with $|h| = 2$. 
+
+\paragraph*{Factor graph.} Given a hypergraph $G = (V, E)$. A Factor graph is a bipartite graph $F=(V', E')$ with $V' = V \cup E$ and $E'=\{(s,h) \in V\times E ~ | ~ s \in h \}$.
+ 
+\section{Probability distributions on graphs}
+In order to define a probabilistic graphical model over a graph $G=(V, E)$, each \textit{single vertex} $s \in V$ is associated with a random variabel $X_s$. 
+The state space of $X_s$ is denoted by $\mathcal X_s$ It defines all possible values $X_s$  may take. 
+For example, in the contineous case $\mathcal X_s \subseteq \mathbb{R}$ and in the discrete case $\mathcal X_s = \{1, \dots, r\}$. 
+Lower case letters are used to denote an element of the state space, $x_s \in \mathcal X_s$. 
+The notation $\{X_s = x_s\}$ corresponds to an event where the random variable $X_s$ takes the specific value $x_s \in \mathcal X_s$.
+
+For a \textit{subset of vertices} $A \subset V$, the above notations may be generalized: $X_A := (X_s, s \in A)$.  
+The joint state space is  the cartesian product of the individual state spaces, $\mathcal X_A := \otimes_{s\in A} \mathcal X_s$. 
+A state space element $x_A \in \mathcal X_A$ is then given by  $x_A = (x_s, s \in A)$. This can be also interpreted as the marginal pdf of $|A|$ random variables with respect to a joint pdf.
+
+
+
+\subsection{Directed graphical models}
+Given a directed graph $G=(V,E)$. For an edge $(s\rightarrow t)$ $s$ is called \textit{parent} of $t$ and $s$ is called \textit{child} of $t$. For a given vertex $s \in V$ denote the set of its parents $\pi(t) = \{s \in V | s \rightarrow t\}$ (if $t$ has no parents then $\pi(t)$ is the empty set).
 \begin{itemize}
-\item definitions
-\item triangulation
-\end{itemize}
-\subsection{Probabilistic graphs}
-\paragraph*{Directed acyclic graphs}
-\begin{itemize}
+\item DAG
 \item interpretation
 \item not unique (bayes thm)
 \item plate notation
 \item model building
 \item conditional independence
 \end{itemize}
-\paragraph*{Markov Networks}
+\paragraph*{Undirected graphical models}
 \begin{itemize}
+\item Markov random fields
 \item interpretation
 \item conditional independence
 \item Moralization
 \end{itemize}
-\subsection{Inference on Probabilistic graphs}
+\subsection{Factor graphs}
 \paragraph*{Junction tree}
 \paragraph*{•}
