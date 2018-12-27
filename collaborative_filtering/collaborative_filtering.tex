@@ -1,0 +1,140 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\title{Some notes on Machine Learning}
+\begin{document}
+\maketitle
+\tableofcontents
+
+\section{Data scaling}
+\section{Loss functions}
+Optimally model parameters are usually defined via loss functions. The parameters are obtained by minimizing the ensuing Lagrangian. Typical loss functions are
+\begin{itemize}
+\item The \textit{least square loss function} is often used for regression problems \cite{Rendle:2012:FML},
+\begin{align}
+ l^{ls}(y_1, y_2):=(y_1-y_2)^2
+\end{align}
+\item The l\textit{ogistic/sigmoid function} is often used for binary classification problems ($y_i \in \{-1,1 \}$),  
+\begin{align}
+l^{c}(y_1, y_2):=-\ln \sigma(y_1-y_2)^2
+\end{align}
+\end{itemize} 
+
+If the number of model parameters is large, overfitting may be avoided by including a regularization term to the Lagrangian.
+\section{Categorical features}
+Categorial features may be treated with indicator variables  (aka dummy, design, categorial, qualitative, or binary variable, or Boolean indicator)
+\paragraph*{Caution:} \textbf{(Dummy variable trap)}
+
+\begin{itemize}
+\item Herbrich p. 2 \cite{herbrich2015recommender}
+\item Indicator variables
+\end{itemize}
+\section{Similarity metric}
+
+\section{Collaborative filtering}
+Collaborative filtering methods are widely used in recommendation engines. For reviews see Refs.\cite{Su:2009:SCF, Adomavicius:2005:TNG, Hofmann:2004:LSM}
+\paragraph{Idea} We would like to adapt the infamous collaborative filtering  method to recommend for a given item (Artikel) a convenient addon-item (Zusatzartikel). This machinery has been successfully employed by Amazon or in the Netflix challenge \cite{linden_amazon_2003,bell_yehuda_netflix_2007}. In these approaches the goal is to recommend for a given user suitable items. 
+In the following we will keep the notion of user and item. However, in order to adapt to our usecase we eventually translate according to
+\begin{align*}
+\text{user} &\rightarrow \text{Artikel} \\
+\text{item} &\rightarrow \text{Zusatzartikel}
+\end{align*}
+First, define the rating matrix $R \in \mathbb{R}^{m \times n}$ matrix, by
+\begin{align}
+r = \{r_{ui}\}_{1\leq u \leq m, 1 \leq i \leq n},
+\end{align}
+where we introduce the index convention $u, v$ for users and for items $i,j,k$.
+\subsection{Neighborhood-based collaborative filtering}
+Following Ref. \cite{bell_yehuda_netflix_2007},
+we distinguish between the\textit{ user-oriented }and \textit{item-oriented} collaborative filtering approach. In the user-oriented approach we consider 
+the set of users $N(u;i)$ that tend to rate similar to user $u$ ("neighbors"),
+and that acutally rated item $i$. Thus $r_{vi}$ is known $\forall v \in  N(u;i)$.
+The \textit{predicted} value of $r_{ui}$ is then obtained as a weighted average of the neighbors' rates,
+\begin{align}
+\label{cf_user_cf}
+r_{ui} = \frac{\sum_{v \in N(u;i)} s_{uv} r_{vi}}{\sum_{v \in N(u;i)} s_{uv}}.
+\end{align} 
+This is essentially a normalized matrix product over the domain of neighbors of user $u$. Eq.\,(\ref{cf_user_cf}) may be interpreted as weighted average of the neighbors rating.
+
+The item-oriented approach is similar, but instead of similar users we work with similar items. In order to estimate $r_{ui}$ in this approach,  we introduce the set of neighboring items $N(i;u)$ that other users tend to rate similarly to their rating of $i$.   Thus, $r_{uj}$ is known $\forall j \in  N(i;u)$. Then the \textit{predicted} value of $r_{ui}$ is  obtained according to
+\begin{align}
+\label{cf_item_cf}
+r_{ui} = \frac{\sum_{j \in N(i;u)} s_{ij} r_{uj}}{\sum_{j \in N(i;u)} s_{ij}}.
+\end{align} 
+
+Both, user-based and item-based collaborative filtering are very similar in structure. However, it has been shown that the latter gives better-quality estimates and tends to be more efficient \cite{sarwar_item_cf_2001}.
+
+Note, that the similarity matrix $s$ plays a crucial role because it determines the neigbors and enters as weight in the Matrix multiplication above. Different collaboartive filtering methods may differ in their choice for $s$  (one common choice is the Pearson correlation). Methods also differ in the how they normalize or center data before predicting via Eq. (\ref{cf_user_cf}) or (\ref{cf_item_cf}).
+
+\subsection{Obtaining the weights}
+In principle the interpolation weights (i.e., components of the similarity matrix $s$) could be incorporated by any incarnation of a similarity matrix. However, such an approach has several drawbacks \cite{bell_yehuda_netflix_2007}
+\begin{itemize} 
+\item  The similarity function is arbitrary
+\item  Overfitting may occur if the interpolation weights sum to one 
+\end{itemize}
+
+Alternatively, one could incorporate the weights directly in the learning process. Given the set of $K$ neighbors $N(i;u)$ we would like to compute
+the interpolation weights $\{w_{ij} | j \in N(i;u) \}$ such that we obtain the best prediction rule according to
+\begin{align} \label{eq:cf_basic}
+r_{ui} =  \sum_{j \in N(i;u)}  w_{ij}r_{uj}
+\end{align}
+For the basic idea, consider the hypothetical dense case where all users but $u$ rated both, $i$ and all its neighbors $N(i;u)$. Then we can learn thte interpolation weights by modeling the relationships between item $i$ and its neighbors by a least square problem,
+\begin{align}
+\min_{w} \sum_{v \neq u} \left( r_{vi} - \sum_{j \in N(i;u)} w_{ij}r_{vj}   \right)^2,
+\end{align}
+which eventually leads to an eigenvalue problem of the form,
+\begin{align}
+A w &= b \\
+A_{jk} &=\sum_{v \neq u } r_{vj}r_{vk} \\
+b_j &= \sum_{v \neq  u} r_{vj} r_{vi}
+\end{align}
+with $A \in \mathbb{R}^{K\times K}$ and $b \in \mathbb R ^K $ ($K$ beeing the number of neighbors).
+
+However, for a sparse  rating matrix there are likely very few users who rated $i$ and all it's neighbors $N(i;u)$, and/or $A$ could be singular. In order to overcome this limitation, define the set $U(j,k)$ of users who rated both j and k. The problem may be reformulated by \cite{bell_yehuda_netflix_2007}
+\begin{align} \label{CF_hat_equation}
+\hat A w = \hat b, 
+\end{align}  
+with
+\begin{align}
+\hat A_{jk} &= \frac{\lvert U(j,k)\rvert \bar A_{jk} + \beta\,  avg}{\lvert U(j,k)\rvert + \beta}, \\
+\bar A_{jk} &= \frac{\sum_{v \in U(j,k)} r_{vj} r_{vk} }{\lvert U(j,k)\rvert }, \end{align}
+and 
+\begin{align}
+\hat b_{j} &= \frac{\lvert U(j,k)\rvert \bar b_{j} + \beta\,  avg}{\lvert U(j,k)\rvert + \beta} \\
+\bar b_{j} &= \frac{\sum_{v \in U(j,k)} r_{vj} r_{vi} }{\lvert U(j,k)\rvert }.
+\end{align}
+Thus $A$ and $b$ are estimated by $\hat A$ and $\hat b$, where the product $\beta\, avg$ accounts for a shrinkage towards a common mean with shrinkage parameter $\beta$ and the baseline vale $avg$. In Ref. \cite{bell_yehuda_netflix_2007} two different baseline averages are combined by averaging over diagonal and non-diagonal entries respectively.
+
+\subsection{Calculation setup}
+In summary we have the following calculation procedure:
+\begin{enumerate}
+\item Calculate $s_{ij}$ via the Pearson correlation. 
+\item Shrink  $s_{ij}$ them based on their support. I.e., multiply them by
+$\lvert U(i,j)\rvert / (\lvert U(i,j)\rvert + \alpha)$  for some small $\alpha$
+\item Pre-compute $\hat A$ and $\hat b$
+\item Compute interpolation weights by inverting (eq. \ref{CF_hat_equation}).
+\item Predict according to eq. (\ref{eq:cf_basic})
+\end{enumerate}
+\subsection{Additional issues}
+\begin{itemize}
+\item Normalization by removing global effects
+\item Cold start problem
+\end{itemize}
+
+\section{Matrix Factorization}
+Matrix factorization is another popular method for recommendation engines.  \cite{Koren:2009:MFT, Rendle:2012:FML}
+
+\section{Cold Start Problem}
+The cold start problem is referred to as the problem of  recommending  articles that have not been rated so far. There are several suggestions in the literature to overcome the cold start problem.
+\begin{itemize}
+\item Matrix factorization techniques \cite{Zhou:2011:FMF, Koren:2009:MFT}
+\item Hybrid methods that combine user ratings, and item/user features \cite{Park:2009:PPR}
+\item Boltzmann machines \cite{Gunawardana:2009:UAB}
+\item Information theoretic approach \cite{Rashid:2008:LPN}
+\end{itemize}
+
+\bibliographystyle{plain}
+\bibliography{papers}
+\end{document}

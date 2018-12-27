@@ -31,6 +31,16 @@
 
 \section{Feature Selection}
 
+\subsection*{Regularization}
+These methods are based on a cost function and a regularization. Depending on the norm of the regularization terms, there are several feature selection methods
+\begin{itemize}
+\item Ridge Regression: $L_2$ Norm
+\item LASSO: $L_1$ Norm
+\item Elasitic net: combination $L_1$ and $L_2$ Norm
+\end{itemize}
+
+
+
 \subsection*{Missing Values Ratio}
 Data columns with too many missing values are unlikely to carry much useful information. Thus data columns with number of missing values greater than a given threshold can be removed. The higher the threshold, the more aggressive the reduction.
 \subsection*{Low Variance Filter}

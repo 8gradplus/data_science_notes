@@ -1,0 +1,276 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usetikzlibrary{trees}
+\usepackage{bbold}
+\usepackage{verbatim}
+\usepackage{amsopn}
+\usepackage{tikz}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{MnSymbol}
+\usepackage{subcaption}
+\usetikzlibrary{arrows}
+\usetikzlibrary{patterns}
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}{Definition}
+
+\begin{document}
+\title{Supervised Learning}
+\maketitle
+
+In a supervised learning problem we have a learning set $\mathcal S$ of 
+$N$ observations, $\mathcal S = \{(x_i, y_i)\}_{i=1}^N$. Where $y_i$ are realizations of the so called target $Y$, which is a random variable (RV) with sample space (i.e., the space of all possible outcomes) $\Omega_t,  ~ \Omega_t \subseteq \mathbb R$. The $x_i$ are called feature vectors. They are realizations of a $p$-dimensional RV  $X=(X_1, \dots, X_p)^T$ with sampel space $\Omega$ and associated sample spaces of the scalar RVs $X_j$,   $\Omega_j \subseteq \mathbb R$. The learning problem is then finding a function
+\begin{align}
+	f: \Omega \rightarrow \Omega_t
+\end{align}
+such that $f(X)$ approximates $Y$ as good as possible. $f$ is also called model and is sometimes written as $f_\mathcal S$ to stress the dependence on the learning set.
+
+\section{Loss function}
+%\paragraph{Loss function.} 
+Assessing a model if often done with by means of a loss function, 
+\begin{align}
+	L : \Omega_t \times \Omega_t \rightarrow \mathbb R
+\end{align}
+For classification the zero-one loss is often used $L(y', y) = \mathbb 1 (y' \neq y)$, where $\mathbb 1$ is the indicator function. For regression problems the squared error loss is often used $L(y', y) = (y' - y)^2 $
+The expectation value of the loss function,
+\begin{align} \label{eq:expected_loss}
+	E_{XY} \left( L(Y, f(X)) \right) = \iint L(y, f(x)) p(x,y)\,dx\, dy
+\end{align}
+is also called expected \textit{prediction error} or \textit{generalization error}. 
+In practice the generalization error is used for model selection and assessment. However,  the joint distribution $p_{XY}$ is hardly ever known. The generalization error is therefore estimated by e.g.,  cross validation \cite{hasties}.
+
+\paragraph{Bayes model.} A model is called Bayes model \cite{understanding_random_forests} $f_B$ if for any model $f$ and learning Set $\mathcal S$ 	$E_{XY} \left( L(Y, f_B(X)) \right) \leq E_{XY} \left( L(Y, f_\mathcal S(X)) \right)$.  That is the model with the  smallest error any supervised model can attain. The generalization error of the Bayes model as also called \textit{residual error}.
+Rewrite the expected loss \ref{eq:expected_loss} in terms of conditional probabilities
+\begin{align*}
+E_{XY} \left( L(Y, f(X)) \right) =  \int p(x) \int  L(y', f(x)) p(y' ~ | ~  x)\, dy' \,dx, 
+%	f_B(x) := \underset{y\in \Omega_t}{\operatorname{argmin}} ~ E_{Y|X=x} \left( L(Y y) \right)
+\end{align*}
+and observe that the inner integrand is a function in $x$.  Defining it's point wise minimum
+according to 
+\begin{align} \label{eq:bayes_model}
+f_B:  ~ x \mapsto \underset{y\in \Omega_t}{\operatorname{argmin}} ~ \int  L(y', y) p(y' ~  | ~  x)\, dy',
+\end{align}
+gives the Bayes model (by construction). Expression \ref{eq:bayes_model} may be also written in terms of conditional expectations, 
+\begin{align}
+	f_B (x) = \underset{y\in \Omega_t}{\operatorname{argmin}} ~	E_{Y~|~X=x} \left( L(Y, y)\right).
+\end{align}
+\paragraph{Example.} In a  regression problem with squared error loss Bayes model is the is the conditional expectation value\footnote{Because $\partial y \int  (y' -  y)^2 p(y' | x)\, dy' \overset{!}{=} 0  \Rightarrow y =  \int  y' p(y' ~ | ~  x)\, dy'  =  E_{Y|X=x} \left(Y\right),$
+where the fact that $\int p(y'~ |~ x) \, dy' = 1$ was used because $p(y'|x) $ is a pdf in $y'$.}, \begin{align}
+f_B(x) = \int  y' p(y' ~ | ~ x)\, dy'.
+\end{align} 
+In a classification problem with zero-one loss the Bayes model is the most probable class \footnote{$ \underset{y\in \Omega_t}{\operatorname{argmin}} \sum_{y' \in \Omega_t}\mathbb 1 (y' \neq y) p(y'~|~ x) = \underset{y\in \Omega_t}{\operatorname{argmin}} \sum_{y' \in \Omega_t}(1 - \mathbb 1 (y' = y) )p(y'~|~ x) = \underset{y\in \Omega_t}{\operatorname{argmin}}  (1 - \sum_{y' \in \Omega_t}\mathbb 1 (y' = y) )p(y'~|~ x) = \underset{y\in \Omega_t}{\operatorname{argmin}}  (1 - p(y| x)) =  \underset{y\in \Omega_t}{\operatorname{argmax} p(y~ |~ x)}  $},
+\begin{align}
+	f_B(x) = \underset{y\in \Omega_t}{\operatorname{argmax}} ~ P(y~|~x) 
+\end{align}
+
+\paragraph{Remark.} In the setup for the Bayes model we assumed to know the joint pdf $p(x,y)$. But, once we knew the exact pdf we know everything. In particular, we could directly use the canonical model by taking the most probable state, $f(x) =  \operatorname{argmax}_y  p(y|x)$. In the above examples this was only true for a classification problem with zero-one loss but not true for a regression problem with squared error loss. The reason is that the error function is still there and encodes additional information. In particular, in the regression problem the error penalty is quadratic, thus  leading to an other Bayes model than the most probable state.
+
+\paragraph{Two learning paradigms.}
+One can distinguish two supervised learning paradigms: the generative and the discriminative approach \cite[Chapter~13]{barber}. The generative approach  tries to model the whole pdf. Classification is then considered as a decision problem (based on the loss function), which is carried out\textit{ a posteriori}. The discriminative approach tries to directly learn the class labels using the loss function \textit{a priori} in the learning step. Most standard supervised learning techniques fall into the latter category.
+
+\section{Decision Trees}
+Decision trees \cite{breiman_random_forest, quinlan_programs_for_ml, understanding_random_forests} are supervised learning methods and and are applicable to both, classification and regression. In essence, they partition sample space 
+ and predict by applying assignment rules, i.e.,  the majority vote (classification) or the mean (regression) over the training set within that partition (Figure \ref{sample_space_partition}).
+\begin{figure}\centering
+	\subcaptionbox{}{
+\begin{tikzpicture}[xscale=.6, yscale=.9]
+\draw [draw=black] (6,6) rectangle (0,0);
+\draw [dashed]  (2.5, 0) -- (2.5, 6)  node[above]{$s^*_{01}$};
+\draw [dashed]  (4, 0) -- (4, 6)   node[above]{$s^*_{21}$};
+\draw [dashed]  (4, 4.5) -- (6, 4.5) node[right]{$s^*_{32}$};
+\draw [dashed]  (2.5, 2) -- (0, 2) node[left]{$s^*_{12}$};
+\node [below] at (3, 0) {$\Omega_1$};
+\node [left] at (0, 3) {$\Omega_2$};
+\node [below right] at (0, 6) {\textcolor{gray}{$\mathcal P_1$}};
+\node [above right] at (0, 0) {\textcolor{gray}{$\mathcal P_2$}};
+\node [right] at (2.5, 3) {\textcolor{gray}{$\mathcal P_3$}};
+\node [above left] at (6, 0) {\textcolor{gray}{$\mathcal P_4$}};
+\node [below left] at (6, 6) {\textcolor{gray}{$\mathcal P_5$}};
+\end{tikzpicture}}
+\quad
+\subcaptionbox{}{
+\begin{tikzpicture}[xscale=.6, yscale=.9]	
+\fill [pattern=north west lines] (2.5,6) rectangle (0,2);
+\fill [pattern=vertical lines] (2.5,2) rectangle (0,0);
+\fill [pattern=north east lines] (2.5,0) rectangle (4,6);
+\fill [pattern=horizontal lines] (4,4) rectangle (6,6);
+\fill [pattern=dots] (4,0) rectangle (6, 4);
+\draw [draw=black] (6,6) rectangle (0,0);
+\node [below] at (3, 0) {$\Omega_1$};
+\node [left] at (0, 3) {$\Omega_2$};
+\end{tikzpicture}}
+\caption{Illustration of sample space partitioning. (a) Partition of a two dimensional sample space $\Omega = \Omega_1 \times \Omega_2$ into $\{\mathcal P_1, \dots \mathcal P_5\}$ regions according to splitting points $\{s^*_0, \dots s^*_3\}$.}
+\label{sample_space_partition}
+\end{figure}
+ Recall, 
+\begin{definition}[Partition]
+	A partition $\mathcal P$ is a family of sets $\mathcal P = \{\mathcal P_i ~|~i\in I\}$ such that
+	\begin{align*}
+	\Omega = \bigcupdot_{i\in I} \mathcal P_i, ~ \mathcal P_i \neq \emptyset
+	\end{align*}
+\end{definition}
+In practice, the partition is determined by a sequence of splitting points $(s^*_{\tau i_\tau})_{\tau = 0,\dots, k}$ \textit{in parallel} feature $i_\tau\in \{1,\dots, p\}$ in a \textit{non-commutative} way. Learning corresponds to finding the partition in sample space.
+
+
+The partitioning process can be also understood as a (decision) tree structure. Start with a root node $\tau_0$ which corresponds to $\Omega$. Each node $\tau$ then splits sample space according to the splitting point $s^*_{\tau i}$  (Figure \ref{fig:decision_tree}). 
+\begin{figure}
+\centering
+\begin{tikzpicture}[
+grow                    = down,
+sibling distance        = 12em,
+level distance          = 3.7em,
+edge from parent/.style = {draw, -latex},
+every node/.style       = {font=\footnotesize},
+level 2/.style={sibling distance=7em},
+level 3/.style={sibling distance=5em},
+treenode/.style = {circle, draw, align=center}
+]
+
+%\tikzstyle{every node}=[circle,draw]
+
+\node [treenode, label=right:\textcolor{gray}{$\Omega$}] {$\tau_0$}
+child {node [treenode, label=right:\textcolor{gray}{$\mathcal P_1 \cup \mathcal P_2$}] {$\tau_1$} 
+	child {node [treenode, label=below:\textcolor{gray}{$\mathcal P_2$}] {$\tau_4$}
+		   edge from parent node[above left, draw=none] {$X_2 \leq s_{12}^*$}}
+	child {node [treenode, label=below:\textcolor{gray}{$\mathcal P_1$}] {$\tau_5$}}
+           edge from parent node[above left, draw=none] {$X_1 \leq s_{01}^*$}}
+child { node [treenode, label=right:\textcolor{gray}{$\mathcal P_3 \cup \mathcal P_4 \cup \mathcal P_5$}] {$\tau_2$}
+	child {node [treenode, label=below:\textcolor{gray}{$\mathcal P_3$}] {$\tau_6$}
+		   edge from parent node[above left, draw=none] {$X_1 \leq s_{21}^*$}}
+	child {node [treenode, label=right:\textcolor{gray}{$\mathcal P_4 \cup \mathcal P_5$}] {$\tau_3$}
+       child{node [treenode, label=below:\textcolor{gray}{$\mathcal P_4$}]{$\tau_7$}
+             edge from parent node[above left, draw=none] {$X_2 \leq s_{32}^*$}}
+       child{node [treenode, label=below:\textcolor{gray}{$\mathcal P_5$}]{$\tau_8$}}   
+          }
+      };
+\end{tikzpicture}
+
+\caption{Illustration of a binary decision tree for a single sample with features $(X_1, X_2)$. At each node the associated subspace of sample space is shown in gray. The sample is passed through the decision tree until it gets assigned to one of the leaf nodes $\{\tau_3, \tau_4, \tau_5, \tau_7, \tau_8\}$ that are associated with the sample space partition $\{\mathcal R_1, \dots \mathcal R_5\}$.}
+
+\label{fig:decision_tree}
+\end{figure}
+ Note that this is a \textit{binary} decision tree, i.e., there are two child nodes at each split node. These are determined if the splitting criterion (e.g. $X_1 \leq s_{01}^*$ for the 0-th split) is fulfilled (left child node) or not (right child node). At the terminal (leaf) nodes there is no further split. The set of all terminal leaf nodes correspond to the partition of sample space. 
+ 
+ We are aiming to build a tree where each node further partitions sample space. To this end, we consider nodes of the form $\tau=(\Omega_\tau, \mathcal S_\tau, \mathcal P_\tau)$. Where $\Omega_\tau \subset \Omega$ is a subspace, which is further partitioned by $\tau$ according to $\mathcal P_\tau$. We call $\Omega_\tau$ \textit{active  sample space} at node $\tau$. Furthermore we call the set $\mathcal S_{\tau} = \{(x, y) ~ | ~ (x, y) \in \mathcal S, ~  x \in \Omega_\tau\}$  \textit{active training set} at node $\tau$. Following the idea of sequentially partitioning sample space gives raise to 
+ 
+ \begin{definition}[Decision tree]
+ 	A decision tree is a directed acyclic, singly connected graph with nodes $\{\tau ~ | ~\tau = (\Omega_\tau, \mathcal S_\tau, \mathcal P_\tau)\}$, where $\Omega_\tau$ is the active sample set, $\mathcal S_\tau$ is the active sample set 
+ 	and $\mathcal P_\tau = \{\mathcal P_{\tau i} ~ | ~  i \in I_\tau\}$ 
+ 	is the partition of $\Omega_\tau$ such that: 
+ 	\begin{enumerate}
+ 		\item The root node is of the form  $\tau_0=(\Omega, \mathcal S, \mathcal P_{\tau_0})$
+ 		\item $\tau$ is leaf node $\Leftrightarrow |\mathcal P_\tau| = 1$   
+ 		\item $\tau$ has $|\mathcal P_\tau|$ child nodes for $|\mathcal P_\tau| >1$. Each child node $\tau_c$ has active sample set $\Omega_{\tau_c} = \mathcal P_{\tau c}, ~ c \in \mathcal I_\tau$.
+ 	\end{enumerate} 
+ \end{definition}
+Apparently, this definition assures that for a decision tree the active sets of all leaf nodes $\{\Omega_\tau ~|~ \tau \text{ is leaf node}\}$ is indeed a partition of $\Omega$.
+
+\paragraph{Examples}
+\begin{itemize}
+	 \item A binary decision tree is a decision tree where each non-terminal node has $|\mathcal P_\tau| = 2$. That is, each non-terminal node has exactly two child nodes.
+
+	\item  Consider a node $\tau=(\Omega_\tau, \mathcal S_\tau)$ where all features in $S_\tau$ are ordered. Define a splitting point $s^*_{\tau i}$ along feature $i$. This induces a partition $\mathcal P_\tau = \{\mathcal P_l, \mathcal P_r\}$ with $\mathcal P_l = \{x ~|~ x\in\Omega_\tau,~ x_i \leq s^*_{\tau i}\}$ and $\mathcal P_r = \{x ~|~ x\in\Omega_\tau,~ x_i > s^*_{\tau i}\}$. Hence there are two child $\tau_l, \tau_r$   of node $\tau$ with active sample sets $\Omega_{\tau_l}=\mathcal P_l$ and $\Omega_{\tau_r}=\mathcal P_r$, respectively.
+\end{itemize}
+Within this point of view learning consists of 1) finding the decision tree structure (i.e., the node partitions $\mathcal P_\tau$) and 2) applying assignment rules at the leaf nodes.  
+ 
+
+\paragraph{Assigment rules on leaf nodes.}
+At the leaf nodes decision trees assign a constant value. 
+Warning: using the frequentists approximation to the pdf leads to unreliable estimates for small nodes. And in  particular, for nodes, which carry only one active training example. Indeed, this is one reason why deep decision trees tend to severely overfit.
+
+\paragraph{Learning the tree structure.}
+Among all possible decision trees for a learning task, training corresponds to finding that decision tree that minimizes the training set error. If there are several such candidates then Occam's Razor dictates to choose the smallest decision tree \cite{BLUMER1987377}, which is also simpler to interpret. However, finding the smallest tree that minimizes the training set error is an NP-complete problem \cite{HYAFIL197615}. Therefore, one needs to resort to heuristics. In essence, the tree is greedily/iteratively grown employing node splitting (partitioning) rules until a stopping criterion is met. To this end the following concepts are going to be introduced:
+\begin{itemize}\itemsep0em 
+	\item \textbf{Node partitioning rules} Criterion for finding the partitions $\mathcal P_\tau$. 
+	\item \textbf{Greedy assumption:} grow the tree such that the decrease in the impurity measure gets locally maximized.
+	\item \textbf{Canonical stopping criteria:} This is used to determine whether a given node is split further or is a terminal (leaf) node. Consider a  node $\tau$ with active training set $\mathcal S_\tau$.  There are two cases that make $\tau$ a leaf node. First, if the target values of $\mathcal S_\tau$ are locally constant,
+	\begin{align}
+		y = y' ~  \forall (x,y), (x',y') \in  \mathcal S_\tau.
+	\end{align}
+	Second, if the features of $\mathcal S_\tau$ are locally constant,
+	\begin{align}
+	x = x' ~  \forall (x,y), (x',y') \in  \mathcal S_\tau.
+	\end{align}
+	As we are aiming to minimize the training set error, in the first case it does not make sense to further refine sample space, whereas in the second case sample space cannot be further partitioned.
+	\item \textbf{Pre-pruning} aims prevent to grow too deep trees and thus overfitting. This approach introduces additional stopping criteria (maximum depth of terminal node, minimum number of training examples in a leaf node, threshold for the total decrease in impurity, minimum number of training example in each child node upon node split)
+	\item \textbf{Post-pruning:} this is an alternative to pre-pruning. First the tree is fully developed and then nodes are sequentially removed that degrade the generalization error. While post-pruning typically works better for decision  trees, pruning in general is no longer required for tree based ensemble methods. 
+\end{itemize}
+This allows to formulate the general form of a binary decision tree algorithm as given in algorithm \ref{algo:decision-tree}.
+
+\begin{algorithm} 
+	\caption{Greedy induction of a binary decision tree with pre-pruning}\label{algo:decision-tree}
+	\begin{algorithmic}[1]
+		\Procedure{Build decision tree $(\mathcal S)$ }{} 
+		\State Create a decision tree $f$ with root node $\tau_0$ 
+		\State Create an empty stack $\mathcal N$ of \textit{open} nodes $(\tau, \mathcal S_\tau)$ 
+		\State $\mathcal N$.PUSH($\tau_0, \mathcal S$)
+		\While{$\mathcal N$ is not empty} 
+		\State $\tau, \mathcal S_\tau = \mathcal N$.POP()
+		\If {the stopping criterion is met for $\tau$}
+		\State $\hat y_\tau = \text{some constant value}$ 
+		\Else{}
+		 \State Find split in $\mathcal S_\tau$: $$s^*= \underset{s\in Q}{\operatorname{argmax} \Delta i (s,\tau) }$$
+		 \State Partition $\mathcal S_\tau = \mathcal S_{\tau_l} \cup \mathcal S_{\tau_r}$ according to $s^*$
+		 \State Create child nodes $\tau_l, \tau_r$ of $\tau$
+		 \State $\mathcal N$.PUSH($\tau_l, \mathcal S_{\tau_l}$)
+		 \State $\mathcal N$.PUSH($\tau_r, \mathcal S_{\tau_r}$)
+		\EndIf
+		\EndWhile
+		\Return $f$
+		\EndProcedure
+	\end{algorithmic}
+\end{algorithm}
+
+
+
+
+\paragraph{Impurity measures}
+\begin{itemize}\itemsep0em 
+	\item Cross entropy
+	\item Gini index
+	\item Misclassification
+\end{itemize}
+
+\paragraph{Decison Tree Algorithms}
+\begin{itemize}\itemsep0em 
+	\item CART
+	\item C4.5
+	\item Patient rule induction method (PRIM)
+	\item Multivariate adaptive regression splines (MARS)
+	\item Hierarchical mixture of experts (HME)
+	\item Bayesian approaches (Denison et al., 1998; Chipman et al., 1998, 2002, 2010)
+\end{itemize}
+Disadvantages: split only parallel to features.
+\paragraph{Categorical predictors}
+\paragraph{Missing values}
+Instead of the standard procedures with missing values (throwing away datapoints or fetures with missing values or imputing) decision trees offer additional possibilities:
+\begin{itemize}
+	\item "Missing" as a category. This is applicable to categorical predictors
+	\item Surrogate variables.
+	
+\end{itemize}
+\section{Ensemble methods}
+\begin{itemize}\itemsep0em 
+	\item Bagging
+	\item Boosting
+	\item Random Forest
+	\item AdaBoos
+	\item XGboost	
+\end{itemize}
+\section{Outlook}
+\begin{itemize} \itemsep0em
+	\item Additive models
+	\item Support Vector machines
+	\item Logistic regression
+\end{itemize}
+\section{Bias-Variance Decomposition}
+\section{Model selection}
+\section{Feature selection}
+
+\bibliographystyle{plain}
+\bibliography{paper}
+\end{document}

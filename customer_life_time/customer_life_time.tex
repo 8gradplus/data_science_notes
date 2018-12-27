@@ -1,0 +1,49 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\newcommand{\tabitem}{~~\llap{\textbullet}~~}
+\title{Customer live time value}
+\begin{document}
+\maketitle
+% \tableofcontents
+\paragraph*{Marketing}
+One aim of marketing is to establish a "good" relationship to the company's customers. In terms of bratal capitalism this is equivalent to maximizing a customers contribution to profit of the company. From a marketing perspective the estimate of this quantity must also include the contribution of a customers future contribution to profit. This is becaus a marketing guy needs to decide whether or not a customer is worth participating in a certain marketing campaign (e.g, SEA, sending a voucher, catalogue or email, etc.). Thus, the challenge is to estimate this quantity over the whole "life time"  of a customer. This quantity is called customer live time value (CLV). So we can say, marketing is concerned about maximising the 
+CLV and customer equity (i.e., the sum of the life
+time values of the company’s customers).
+
+\paragraph*{Operational Implications}
+It is crucial to recall that the CLV is an estimate given the customers transaction history. So, historically his shopping behvoir is unfluenced by historical marketing actions. Furhtermore, the CLV has empirically always an exponential decay. This implies that customers will die (either physically or economically) sooner ar later. So one could use the CLV to monitor marketing actions and pose the question:  did this marketing action prolonge the customers life time?
+
+\paragraph*{Categorization}
+Modelleing the customer live time value (CLV) has quite a long history in direct marketing \cite{schmittlein_1987, Fader_2010_excel, gupta_2006}.  There exist Bayesian approaches and extensions \cite{2013arXiv1304.5380K, r_clv} as well as more machine learning based approaches \cite{asos_2017}. 
+In the conventional setting the different models that exist can be categorized by contractual vs non-contractual and continuous purchases vs discrete purchases settings \cite{gauthier_clt_intro}. A contractual setting is a business model with contract (e.g., newspaper subscription). A continuous setting is a business model where buy events may happen at any point in time (e.g., amazon).
+
+\begin{center}
+  \begin{tabular}{  c   l   l }
+    \hline
+    & \textbf{Non-contractual} & \textbf{Contractual}\\ %\hline
+    \\
+    %\hline
+    \textbf{Continous}  & \tabitem Usecase: Amazon & \tabitem Use case: Credit Card \\  
+                        & \tabitem Paret/NBD model \cite{schmittlein_1987} & \\
+                        & \tabitem $\Gamma-\Gamma$ extension \cite{fader_gamma_gamma, fader_rfm_clv_2005}  &  \\
+                        & \tabitem BG/NBD \cite{Fader_2010_excel} & \\
+                        
+    \\
+%    \hline
+    \\
+    \textbf{Discrete} & \tabitem Use case: Event Attendance & \tabitem Use case: Netflix \\
+    \hline
+  \end{tabular}
+\end{center}
+
+Note that conventional CLV models \cite{schmittlein_1987} focus on purchase counts and life time. The $\Gamma-\Gamma$ extension \cite{fader_rfm_clv_2005} is a method to also incorporate monetary value. 
+
+\section{The beta/geometric beta-Bernoulli model}
+\cite{Fader_2010_excel}
+
+\bibliographystyle{plain}
+\bibliography{papers}
+\end{document}
