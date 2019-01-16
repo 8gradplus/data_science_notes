@@ -59,11 +59,11 @@ gives the Bayes model (by construction). Expression \ref{eq:bayes_model} may be 
 	f_B (x) = \underset{y\in \Omega_t}{\operatorname{argmin}} ~	E_{Y~|~X=x} \left( L(Y, y)\right).
 \end{align}
 \paragraph{Example.} In a  regression problem with squared error loss Bayes model is the is the conditional expectation value\footnote{Because $\partial y \int  (y' -  y)^2 p(y' | x)\, dy' \overset{!}{=} 0  \Rightarrow y =  \int  y' p(y' ~ | ~  x)\, dy'  =  E_{Y|X=x} \left(Y\right),$
-where the fact that $\int p(y'~ |~ x) \, dy' = 1$ was used because $p(y'|x) $ is a pdf in $y'$.}, \begin{align}
+where the fact that $\int p(y'~ |~ x) \, dy' = 1$ was used because $p(y'|x) $ is a pdf in $y'$.}, \begin{align} \label{eq:bayes_regression}
 f_B(x) = \int  y' p(y' ~ | ~ x)\, dy'.
 \end{align} 
 In a classification problem with zero-one loss the Bayes model is the most probable class \footnote{$ \underset{y\in \Omega_t}{\operatorname{argmin}} \sum_{y' \in \Omega_t}\mathbb 1 (y' \neq y) p(y'~|~ x) = \underset{y\in \Omega_t}{\operatorname{argmin}} \sum_{y' \in \Omega_t}(1 - \mathbb 1 (y' = y) )p(y'~|~ x) = \underset{y\in \Omega_t}{\operatorname{argmin}}  (1 - \sum_{y' \in \Omega_t}\mathbb 1 (y' = y) )p(y'~|~ x) = \underset{y\in \Omega_t}{\operatorname{argmin}}  (1 - p(y| x)) =  \underset{y\in \Omega_t}{\operatorname{argmax} p(y~ |~ x)}  $},
-\begin{align}
+\begin{align} \label{eq:bayes_classification}
 	f_B(x) = \underset{y\in \Omega_t}{\operatorname{argmax}} ~ P(y~|~x) 
 \end{align}
 
@@ -103,7 +103,7 @@ Decision trees \cite{breiman_random_forest, quinlan_programs_for_ml, understandi
 \node [below] at (3, 0) {$\Omega_1$};
 \node [left] at (0, 3) {$\Omega_2$};
 \end{tikzpicture}}
-\caption{Illustration of sample space partitioning. (a) Partition of a two dimensional sample space $\Omega = \Omega_1 \times \Omega_2$ into $\{\mathcal P_1, \dots \mathcal P_5\}$ regions according to splitting points $\{s^*_0, \dots s^*_3\}$.}
+\caption{Illustration of sample space partitioning. (a) Partition of a two dimensional sample space $\Omega = \Omega_1 \times \Omega_2$ into $\{\mathcal P_1, \dots \mathcal P_5\}$ regions according to splitting points $\{s^*_0, \dots s^*_3\}$. Once the partition is obtained each each $\mathcal P_i$ predicts a constant output value (b).}
 \label{sample_space_partition}
 \end{figure}
  Recall, 
@@ -149,7 +149,7 @@ child { node [treenode, label=right:\textcolor{gray}{$\mathcal P_3 \cup \mathcal
       };
 \end{tikzpicture}
 
-\caption{Illustration of a binary decision tree for a single sample with features $(X_1, X_2)$. At each node the associated subspace of sample space is shown in gray. The sample is passed through the decision tree until it gets assigned to one of the leaf nodes $\{\tau_3, \tau_4, \tau_5, \tau_7, \tau_8\}$ that are associated with the sample space partition $\{\mathcal R_1, \dots \mathcal R_5\}$.}
+\caption{Illustration of a binary decision tree for a single sample with features $(X_1, X_2)$. At each node the associated subspace of sample space is shown in gray. The sample is passed through the decision tree until it gets assigned to one of the leaf nodes $\{\tau_3, \tau_4, \tau_5, \tau_7, \tau_8\}$ that are associated with the sample space partition $\{\mathcal P_1, \dots \mathcal P_5\}$.}
 
 \label{fig:decision_tree}
 \end{figure}
@@ -158,16 +158,16 @@ child { node [treenode, label=right:\textcolor{gray}{$\mathcal P_3 \cup \mathcal
  We are aiming to build a tree where each node further partitions sample space. To this end, we consider nodes of the form $\tau=(\Omega_\tau, \mathcal S_\tau, \mathcal P_\tau)$. Where $\Omega_\tau \subset \Omega$ is a subspace, which is further partitioned by $\tau$ according to $\mathcal P_\tau$. We call $\Omega_\tau$ \textit{active  sample space} at node $\tau$. Furthermore we call the set $\mathcal S_{\tau} = \{(x, y) ~ | ~ (x, y) \in \mathcal S, ~  x \in \Omega_\tau\}$  \textit{active training set} at node $\tau$. Following the idea of sequentially partitioning sample space gives raise to 
  
  \begin{definition}[Decision tree]
- 	A decision tree is a directed acyclic, singly connected graph with nodes $\{\tau ~ | ~\tau = (\Omega_\tau, \mathcal S_\tau, \mathcal P_\tau)\}$, where $\Omega_\tau$ is the active sample set, $\mathcal S_\tau$ is the active sample set 
+ 	A decision tree is a directed acyclic, singly connected graph with nodes $\{\tau ~ | ~\tau = (\Omega_\tau, \mathcal S_\tau, \mathcal P_\tau)\}$, where $\Omega_\tau$ is the active sample set, $\mathcal S_\tau$ is the active training set 
  	and $\mathcal P_\tau = \{\mathcal P_{\tau i} ~ | ~  i \in I_\tau\}$ 
  	is the partition of $\Omega_\tau$ such that: 
  	\begin{enumerate}
  		\item The root node is of the form  $\tau_0=(\Omega, \mathcal S, \mathcal P_{\tau_0})$
  		\item $\tau$ is leaf node $\Leftrightarrow |\mathcal P_\tau| = 1$   
- 		\item $\tau$ has $|\mathcal P_\tau|$ child nodes for $|\mathcal P_\tau| >1$. Each child node $\tau_c$ has active sample set $\Omega_{\tau_c} = \mathcal P_{\tau c}, ~ c \in \mathcal I_\tau$.
+ 		\item $\tau$ has $|\mathcal P_\tau|$ child nodes for $|\mathcal P_\tau| >1$. Each child node $\tau_c$ has active sample set $\Omega_{\tau_c} = \mathcal P_{\tau c}, ~ c \in I_\tau$.
  	\end{enumerate} 
  \end{definition}
-Apparently, this definition assures that for a decision tree the active sets of all leaf nodes $\{\Omega_\tau ~|~ \tau \text{ is leaf node}\}$ is indeed a partition of $\Omega$.
+Apparently, this definition assures that for a decision tree the active sets of all leaf nodes $\{\Omega_\tau \mid \tau \text{ is leaf node}\}$ is indeed a partition of $\Omega$.
 
 \paragraph{Examples}
 \begin{itemize}
@@ -178,14 +178,49 @@ Apparently, this definition assures that for a decision tree the active sets of 
 Within this point of view learning consists of 1) finding the decision tree structure (i.e., the node partitions $\mathcal P_\tau$) and 2) applying assignment rules at the leaf nodes.  
  
 
-\paragraph{Assigment rules on leaf nodes.}
-At the leaf nodes decision trees assign a constant value. 
-Warning: using the frequentists approximation to the pdf leads to unreliable estimates for small nodes. And in  particular, for nodes, which carry only one active training example. Indeed, this is one reason why deep decision trees tend to severely overfit.
+\subsection{Assigment rules on leaf nodes.}
+Assume that we have learned in some way the decision tree and thus the partition of sample space (vie the leaf nodes). 
+At the leaf nodes decision trees assign a constant value using the Bayes model. To this end we introduce a latent variable for the leaf node membership.
+\begin{align}
+	p(y, x, \tau) &= p(y \mid x, \tau)\, p(\tau \mid x) \,p(x) \\ 
+	              &\approx p(y \mid \tau)\, p(\tau \mid x) \,p(x),  \label{approx:joint_pdf_dt}
+\end{align}
+where the approximation accounts for the basic idea that the prediction is only based on the partition $x$ falls into and thus on the leaf node $x$ is member of. Thus the conditional probability, 
+\begin{align} \label{eq:cond_node_probability}
+p(\tau \mid x) = \mathbb 1(x \in \Omega_\tau, \tau \text{ is leaf node})
+\end{align} Plugging this factorization into the expected loss function gives,
+\begin{align}
+	E_{XY} \left( L(Y, f(X)) \right) 
+	&= \sum_{\tau'}   \int_\Omega dx \, p(x) \, p(\tau' \mid x) \int dy\,L(y, f(x)) \, p(y \mid \tau')\,  \\
+	&= \sum_{\tau'}   \int_{\Omega_{\tau'}}   dx \, p(x) \, p(\tau' \mid x) \int dy\,L(y, f(x)) \, p(y \mid \tau')\,  \\
+	&= \int_{\Omega_\tau}   dx \, p(x) \int dy\,L(y, f(x)) p(y \mid \tau),
+\end{align}
+where in the last two lines the partition of sample space was used according to (\ref{eq:cond_node_probability}).
+Following the expressions for the Bayes model for classification (\ref{eq:bayes_classification}) and regression (\ref{eq:bayes_regression}) we therefore get as predictions at leaf node $\tau$
+\begin{itemize}\itemsep0em
+	\item \textbf{Classification with zero-one loss}
+	\begin{align}
+	\hat y_\tau &= \underset{y\in \Omega_t}{\operatorname{argmax}} ~ P(y\mid\tau) \\
+	            &\approx \underset{y\in \Omega_t}{\operatorname{argmax}} \frac{\lvert \{(x', y') \mid (x', y')  \in \mathcal S_\tau, ~ y'=y\}\rvert }{\lvert \mathcal S_\tau \rvert} \label{approx:classification_tau}
+	\end{align}
+	\item \textbf{Regression with squared loss}
+	\begin{align}
+	\hat y_\tau &= \int  y' p(y' \mid \tau)\, dy' \\ 
+	 &\approx \frac{1}{\lvert  \mathcal S_\tau \rvert} \sum_{x, y \in \mathcal S_\tau} y. \label{approx:regression_tau} %\mathcal Y_\tau = \{y \mid (x, y) \in S_\tau\}
+	\end{align}
+\end{itemize}
+So in classification problem, the class label is predicted by the maximum frequentist probability and in a regression problem the node value is given by the empirical mean.
+The approximations refer to the frequentist estimates of the conditional probability (classification) and expectation value (regression) based on the active training sets at node $\tau$.
 
-\paragraph{Learning the tree structure.}
+In summary, for a prediction at a leaf node we used approximation (\ref{approx:joint_pdf_dt}) and frequentist approximations (\ref{approx:classification_tau}) and (\ref{approx:regression_tau}). 
+The first approximation neglects the specific value of $x$ and rather predicts globally on  the corresponding node. The second set of approximations has two implications \cite[Chapter~3.4]{understanding_random_forests}: 
+First the frequentist approximation leads to unreliable estimates for nodes with small active training sets (in  particular, for nodes, which carry only one active training example). Second the estimates are based on the training data. Therefore we are taking the optimal decision not over the generalization error (as the Bayes model would do) but rather over the training set error.  This leads to the tendency of deep decision trees to severely overfit.
+
+
+\subsection{Learning the tree structure.}
 Among all possible decision trees for a learning task, training corresponds to finding that decision tree that minimizes the training set error. If there are several such candidates then Occam's Razor dictates to choose the smallest decision tree \cite{BLUMER1987377}, which is also simpler to interpret. However, finding the smallest tree that minimizes the training set error is an NP-complete problem \cite{HYAFIL197615}. Therefore, one needs to resort to heuristics. In essence, the tree is greedily/iteratively grown employing node splitting (partitioning) rules until a stopping criterion is met. To this end the following concepts are going to be introduced:
 \begin{itemize}\itemsep0em 
-	\item \textbf{Node partitioning rules} Criterion for finding the partitions $\mathcal P_\tau$. 
+	\item \textbf{Node partitioning rules} Criterion for finding the partitions $\mathcal P_\tau$. This is bases on a so-called impurity measure.
 	\item \textbf{Greedy assumption:} grow the tree such that the decrease in the impurity measure gets locally maximized.
 	\item \textbf{Canonical stopping criteria:} This is used to determine whether a given node is split further or is a terminal (leaf) node. Consider a  node $\tau$ with active training set $\mathcal S_\tau$.  There are two cases that make $\tau$ a leaf node. First, if the target values of $\mathcal S_\tau$ are locally constant,
 	\begin{align}
@@ -225,10 +260,34 @@ This allows to formulate the general form of a binary decision tree algorithm as
 	\end{algorithmic}
 \end{algorithm}
 
+\subsection{Impurity measures for classification}
+Intuitively a "good" split is a split that makes the child nodes purer. That is, the probability of a sample falling into a child node should be sharply peaked at one class label. Rather than working with the concept of purity, the complementary concept is used\cite{cart84}:
 
+\begin{definition}[Impurity function] An impurity function is a function $\phi: M \rightarrow \mathbb R$, where $M=\left\{p \mid p\in [0,1]^J, ~ \sum_{j=1}^J p_j=1\right\}$ such that
+	\begin{itemize}\itemsep0em 
+		\item $\phi$ is a maximum only the point $\left(\frac{1}{J}, \frac{1}{J}, \dots, \frac{1}{J}\right)$
+		\item $\phi$ is a minimum at the point  $\left(1, 0, \dots, 0\right)$
+		\item $\phi$ is symmetric
+	\end{itemize}
+\end{definition}
+By symmetry also all permutations of $\left(1, 0, \dots, 0\right)$ are minimizers. This concept is applied to the decision tree
+\begin{definition}[Node impurity measure] Given an impurity function and decision tree with node $\tau$, the impurity measure at node $\tau$ is defined as,
+\begin{align*}
+	i(\tau) = \phi(p(c_1\mid \tau), p(c_2\mid \tau), \dots, p(c_J\mid \tau)),
+\end{align*}
+where $p(c_1\mid \tau), ~ c_i \in \Omega_t$ are the conditional class probabilities.
+\end{definition}
+Having defined the impurity measure at a given node we would like to obtain a measure on how beneficial it is to add further child nodes (i.e., further partition sample space).
+\begin{definition}[Goodness of split] \label{def:goodness_of_split}
+	Let $C(\tau)=\left\{\tau' \mid \tau' \text{ is child of }\tau\right\}$. Then the goodness of split is defined as
+	\begin{align*}
+		\Delta i(\tau) = i(\tau) - \sum_{\tau' \in C(\tau)} p(\tau' \mid \tau) i(\tau')
+	\end{align*} 
+\end{definition}
+Note the difference between $p(\tau' \mid \tau)$ and $p(\tau' \mid \tau, x)$. While in the latter expression there is exactly one child node that has probability one (by construction of a decision tree), the former approach is less trivial and is typically approximated by the proportions of the active training sets of the child nodes with respect to the parent node.
 
+So the basic idea of Definition \ref{def:goodness_of_split} is to take as measure the expected reduction of the node impurity measure upon adding further child nodes.
 
-\paragraph{Impurity measures}
 \begin{itemize}\itemsep0em 
 	\item Cross entropy
 	\item Gini index
@@ -251,6 +310,8 @@ Instead of the standard procedures with missing values (throwing away datapoints
 \begin{itemize}
 	\item "Missing" as a category. This is applicable to categorical predictors
 	\item Surrogate variables.
+	\item https://newonlinecourses.science.psu.edu/stat508/lesson/11
+	\item https://people.cs.pitt.edu/~milos/courses/cs2750-Spring03/lectures/class19.pdf
 	
 \end{itemize}
 \section{Ensemble methods}
