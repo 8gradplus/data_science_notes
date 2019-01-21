@@ -1,5 +1,6 @@
 \documentclass[12pt,a4paper]{article}
 \usepackage[utf8]{inputenc}
+\usepackage{amsthm}
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
@@ -73,7 +74,7 @@ In a classification problem with zero-one loss the Bayes model is the most proba
 One can distinguish two supervised learning paradigms: the generative and the discriminative approach \cite[Chapter~13]{barber}. The generative approach  tries to model the whole pdf. Classification is then considered as a decision problem (based on the loss function), which is carried out\textit{ a posteriori}. The discriminative approach tries to directly learn the class labels using the loss function \textit{a priori} in the learning step. Most standard supervised learning techniques fall into the latter category.
 
 \section{Decision Trees}
-Decision trees \cite{breiman_random_forest, quinlan_programs_for_ml, understanding_random_forests} are supervised learning methods and and are applicable to both, classification and regression. In essence, they partition sample space 
+Decision trees \cite{breiman_random_forest, quinlan_programs_for_ml, understanding_random_forests, Ripley1995} are supervised learning methods and and are applicable to both, classification and regression. In essence, they partition sample space 
  and predict by applying assignment rules, i.e.,  the majority vote (classification) or the mean (regression) over the training set within that partition (Figure \ref{sample_space_partition}).
 \begin{figure}\centering
 	\subcaptionbox{}{
@@ -182,31 +183,47 @@ Within this point of view learning consists of 1) finding the decision tree stru
 Assume that we have learned in some way the decision tree and thus the partition of sample space (vie the leaf nodes). 
 At the leaf nodes decision trees assign a constant value using the Bayes model. To this end we introduce a latent variable for the leaf node membership.
 \begin{align}
-	p(y, x, \tau) &= p(y \mid x, \tau)\, p(\tau \mid x) \,p(x) \\ 
-	              &\approx p(y \mid \tau)\, p(\tau \mid x) \,p(x),  \label{approx:joint_pdf_dt}
+	p(y, x, \tau) &= p(y \mid x, \tau)\, p(\tau, x) \\ 
+	              &\approx p(y \mid \tau)\, p(\tau, x)  \label{approx:joint_pdf_dt}
 \end{align}
-where the approximation accounts for the basic idea that the prediction is only based on the partition $x$ falls into and thus on the leaf node $x$ is member of. Thus the conditional probability, 
-\begin{align} \label{eq:cond_node_probability}
-p(\tau \mid x) = \mathbb 1(x \in \Omega_\tau, \tau \text{ is leaf node})
-\end{align} Plugging this factorization into the expected loss function gives,
+where the approximation accounts for the basic idea that the prediction is only based on the partition $x$ falls into and not on its specific value. 
+%and thus on the leaf node $x$ is member of. Thus the conditional probability, 
+%\begin{align} \label{eq:cond_node_probability}
+%p(\tau \mid x) = \mathbb 1(x \in \Omega_\tau, \tau \text{ is leaf %node})
+%\end{align} 
+Plugging this factorization into the expected loss function gives,
 \begin{align}
-	E_{XY} \left( L(Y, f(X)) \right) 
-	&= \sum_{\tau'}   \int_\Omega dx \, p(x) \, p(\tau' \mid x) \int dy\,L(y, f(x)) \, p(y \mid \tau')\,  \\
-	&= \sum_{\tau'}   \int_{\Omega_{\tau'}}   dx \, p(x) \, p(\tau' \mid x) \int dy\,L(y, f(x)) \, p(y \mid \tau')\,  \\
-	&= \int_{\Omega_\tau}   dx \, p(x) \int dy\,L(y, f(x)) p(y \mid \tau),
+	E_{XY\mathrm{T}} \left( L(Y, f(\mathrm{T})) \right) 
+	&= \sum_{\tau}   \int_\Omega dx  \, p(\tau, x) \int dy\,L(y, f(\tau)) \, p(y \mid \tau)\,  \\
+	&= \sum_{\tau}   p(\tau) \int dy\,L(y, f(\tau)) \, p(y \mid \tau')\,  
+	%&= \int_{\Omega_\tau}   dx \, p(x) \int dy\,L(y, f(x)) p(y \mid \tau) 
+	\label{eq:expected_loss_decision_tree},
 \end{align}
-where in the last two lines the partition of sample space was used according to (\ref{eq:cond_node_probability}).
-Following the expressions for the Bayes model for classification (\ref{eq:bayes_classification}) and regression (\ref{eq:bayes_regression}) we therefore get as predictions at leaf node $\tau$
+where the model depends only on the node, $f(\tau)$, which is a consequence of factorization (\ref{approx:joint_pdf_dt}). Expression (\ref{eq:expected_loss_decision_tree}) is the expected loss over the whole model (i.e, including all nodes via the expectation value). By factorization (\ref{approx:joint_pdf_dt}) it does not depend on $x$.
+
+Since we are interested in the assignment rule at a given leaf node,
+we would like to compute the expected loss function conditioned on leaf node $\tau$, 
+\begin{align}
+E_{XY\mid\mathrm{T}} \left( L(Y, f(\mathrm{T})) \right) 
+&=    \int_\Omega dx  \, p(x \mid  \tau ) \int dy\,L(y, f(\tau)) \, p(y \mid \tau)\,  \\
+&=  \int dy\,L(y, f(\tau)) \, p(y \mid \tau')\,  
+\label{eq:expected_cond_loss_decision_tree},
+\end{align}
+From (\ref{eq:expected_cond_loss_decision_tree}) or (\ref{eq:expected_loss_decision_tree}) and following the derivations for the Bayes model for classification (\ref{eq:bayes_classification}) and regression (\ref{eq:bayes_regression}) we therefore get as predictions at leaf node $\tau$:
 \begin{itemize}\itemsep0em
 	\item \textbf{Classification with zero-one loss}
-	\begin{align}
-	\hat y_\tau &= \underset{y\in \Omega_t}{\operatorname{argmax}} ~ P(y\mid\tau) \\
-	            &\approx \underset{y\in \Omega_t}{\operatorname{argmax}} \frac{\lvert \{(x', y') \mid (x', y')  \in \mathcal S_\tau, ~ y'=y\}\rvert }{\lvert \mathcal S_\tau \rvert} \label{approx:classification_tau}
+	\begin{align} 
+	\hat y_\tau &= \underset{y\in \Omega_t}{\operatorname{argmax}} ~ P(y\mid\tau) \label{eq:bayes_model_classification_dt}\\
+	            &\approx
+	            \underset{y\in \Omega_t}{\operatorname{argmax}}  \frac{N_{y\tau}}{N_\tau}  \label{approx:classification_tau}
 	\end{align}
+	where $N_{y\tau} = \lvert \{(x', y') \mid (x', y')  \in \mathcal S_\tau, ~ y'=y\}\rvert$ is the count of class labels in the active training set at node $\tau$ and
+	$N_\tau =  \lvert \mathcal S_\tau \rvert$ is the size of the active training set.
 	\item \textbf{Regression with squared loss}
 	\begin{align}
-	\hat y_\tau &= \int  y' p(y' \mid \tau)\, dy' \\ 
-	 &\approx \frac{1}{\lvert  \mathcal S_\tau \rvert} \sum_{x, y \in \mathcal S_\tau} y. \label{approx:regression_tau} %\mathcal Y_\tau = \{y \mid (x, y) \in S_\tau\}
+	\hat y_\tau &= \int  y' p(y' \mid \tau)\, dy' \label{eq:bayes_model_regression_dt} \\ 
+	 &\approx  \frac{1}{N_\tau} \sum_{i=1} ^{N_\tau}y_i.
+	 \label{approx:regression_tau}
 	\end{align}
 \end{itemize}
 So in classification problem, the class label is predicted by the maximum frequentist probability and in a regression problem the node value is given by the empirical mean.
@@ -220,8 +237,8 @@ First the frequentist approximation leads to unreliable estimates for nodes with
 \subsection{Learning the tree structure.}
 Among all possible decision trees for a learning task, training corresponds to finding that decision tree that minimizes the training set error. If there are several such candidates then Occam's Razor dictates to choose the smallest decision tree \cite{BLUMER1987377}, which is also simpler to interpret. However, finding the smallest tree that minimizes the training set error is an NP-complete problem \cite{HYAFIL197615}. Therefore, one needs to resort to heuristics. In essence, the tree is greedily/iteratively grown employing node splitting (partitioning) rules until a stopping criterion is met. To this end the following concepts are going to be introduced:
 \begin{itemize}\itemsep0em 
-	\item \textbf{Node partitioning rules} Criterion for finding the partitions $\mathcal P_\tau$. This is bases on a so-called impurity measure.
-	\item \textbf{Greedy assumption:} grow the tree such that the decrease in the impurity measure gets locally maximized.
+	\item \textbf{Node partitioning rules} Instruction for finding the partitions $\mathcal P_\tau$ and a criterion for finding the "best" partition (goodness of split $\Delta i(\tau)$).
+	\item \textbf{Greedy assumption:} grow the tree such that the goodness of split gets locally maximized.
 	\item \textbf{Canonical stopping criteria:} This is used to determine whether a given node is split further or is a terminal (leaf) node. Consider a  node $\tau$ with active training set $\mathcal S_\tau$.  There are two cases that make $\tau$ a leaf node. First, if the target values of $\mathcal S_\tau$ are locally constant,
 	\begin{align}
 		y = y' ~  \forall (x,y), (x',y') \in  \mathcal S_\tau.
@@ -286,14 +303,52 @@ Having defined the impurity measure at a given node we would like to obtain a me
 \end{definition}
 Note the difference between $p(\tau' \mid \tau)$ and $p(\tau' \mid \tau, x)$. While in the latter expression there is exactly one child node that has probability one (by construction of a decision tree), the former approach is less trivial and is typically approximated by the proportions of the active training sets of the child nodes with respect to the parent node.
 
-So the basic idea of Definition \ref{def:goodness_of_split} is to take as measure the expected reduction of the node impurity measure upon adding further child nodes.
+So the basic idea of Definition \ref{def:goodness_of_split} is to take as measure the expected reduction of the node impurity measure upon adding further child nodes. Intuitively we would expect $\Delta i(\tau) \geq 0$. That is any addition of child nodes leads to a decrease in the goodness of split and in the worst case it does not  decrease the goodness of split. For a binary (multi class) decision tree, the class of impurity functions that fulfill this intuition may be characterized by \cite[Appendix of Chap. 4]{cart84}
+\begin{theorem} \label{thm:classification_impurity_functions}
+	Let there be any binary partition of node $\tau$ with child nodes $\{\tau_l, \tau_r\}$. If the impurity function is strictly concave, then the goodness of split 
+	\begin{align*}
+	\Delta i(\tau) \geq 0,
+	\end{align*}
+	with equality if, and only if, $p(c_i \mid \tau_l) =  p(c_i \mid \tau_r) ~ \forall c_i \in \Omega_t$. 
+\end{theorem}
+\begin{proof}
+	Via Jensen inequality \cite{Ripley1995}.
+\end{proof}
+\paragraph{Question:} Note that theorem \ref{thm:classification_impurity_functions} only holds for a binary node split. Is there a generalization for arbitrary node splits? 
 
-\begin{itemize}\itemsep0em 
-	\item Cross entropy
-	\item Gini index
-	\item Misclassification
-\end{itemize}
+So for a binary decision tree  strictly concave impurity functions are of interest. In practice, these are  
+	\begin{align}
+    i(\tau) &= - \sum_{c \in \Omega_t} p(c \mid t) \log_2 p(c \mid t) \quad \text{(Shannon Entropy)} \label{eq:shannon_impurity}, \\ 
+    i(\tau) &= \sum_{c \in \Omega_t} p(c \mid \tau) (1 - p(c \mid \tau)) \quad \text{(Gini Index)} \label{eq:gini_impurity}.
+    \end{align}
+For practical calculations the empirical probabilities based on the training data are taken. Note that the goodness of split of the Shannon impurity is just the information gain. 
 
+Comparing the Gini and Shannon impurity\cite{Breiman1996}, Gini prefers splits that put the largest class in one pure node while Shannon prefers to balance the size of the child nodes. For problems with small number of classes they should give similar results. However for many classes, Gini may produce trees that are too unbalanced high up in the tree, while the Entropy lacks uniqueness. Note that there are many other impurity measures proposed in the literature \cite{gini_vs_twoing, epub1833,  BERZAL200331}. 
+
+Empirically, as long as the impurity function is reasonable, it rather effects the structure of the decision tree (and thus the interpretation) rather than the accuracy.
+
+\paragraph{Remark.}There is another strictly convex impurity function that suggests itself. Taking the conditional expected loss (\ref{eq:expected_cond_loss_decision_tree}) for a decision tree at node $\tau$ with the corresponding Bayes model for the zero-one loss (\ref{eq:bayes_model_classification_dt}), 
+\begin{align} \label{eq:impurity_misclassification_rate}
+	i(\tau) &= \sum_{c\in \Omega_t} \,L(c, \hat c_\tau) p(c \mid \tau)  \nonumber \\ 
+	 &=\sum_{y\in \Omega_t} \, \mathbb 1 (c \neq \hat c_\tau) p(c \mid \tau)  \nonumber \\
+	 &= 1 - p(\hat c_\tau \mid \tau)  \nonumber \\ 
+	&= 1 - \underset{c\in \Omega_t}{\operatorname{max}} ~ p(c \mid\tau) \quad \text{(Misclassification error)}.
+\end{align}    
+The corresponding goodness of split is then the reduction of the misclassification  error upon adding child nodes. 
+Despite the natural attractiveness of this impurity function it has two serious flaws: 1) it could lead to scenarios where all possible node splits have zero goodness of split and 2) it does not account for beneficial shifts in the probability distributions of the child nodes. 
+The first point may happen when all child nodes have the same majority class \cite{cart84, understanding_random_forests} and thus, making this impurity function useless. The second point is problematic within the greedy tree growing algorithm. Thus, the misclassification error seems to short-sighted upon growing a tree \cite{cart84, hasties}.  On the other hand the misclassification rate is useful in post-pruning.
+
+\subsection{Impurity measures for regression}
+For the regression problem  impurity functions seem to be less well characterized in the literature. The reason is that the regression pendant of (\ref{eq:impurity_misclassification_rate})  is less problematic (in classification the main problems are rooted in the few number of classes). Computing the expected loss (\ref{eq:expected_cond_loss_decision_tree}) for a decision tree at node $\tau$ with the corresponding Bayes model for the squared loss gives the \textit{impurity function for a regression tree}:
+(\ref{eq:bayes_model_regression_dt})
+\begin{align} 
+	i(\tau) & = \int dy\,L(y, f(x)) p(y \mid \tau) \nonumber \\
+	 & =  \int dy\,(y -  \hat y_\tau)^2 \, p(y \mid \tau), \quad \hat y_\tau=\int  y' p(y' \mid \tau)\, dy'. \label{eq:impurity_measure_regression}
+\end{align}
+\paragraph{Remark.} There is an interesting relation between the expected loss (\ref{eq:impurity_measure_regression}) and the Gini index (\ref{eq:gini_impurity}). Consider a two class problem, $c_1=0$ and $c_2=1$. The Gini index is given by $i_G(\tau) = 2\, p(c_1|\tau)\, p(c_2|\tau)$. On the other hand, if we were treating the classification problem as a regression, the expected loss (\ref{eq:impurity_measure_regression}) translates into $i_R(\tau) = \sum_i (c_i -\hat c)^2 p(c_i\mid \tau)$ with $\hat c = \sum_i c_i\,p(c_i \mid \tau) = p(c_2\mid \tau)$. Therefore, $i_R =  p(c_1|\tau)\, p(c_2|\tau)$. Therefore, 
+$$i_R(\tau) = i_G(\tau) / 2$$. So the Gini index for a two class problem is up to a factor of two equivalent to the expected loss in the regression problem.  In this sense the impurity function \ref{eq:impurity_measure_regression} is applicable to both, a regression problem and a binary classification problem. 
+
+\subsection{Generating Node splits}
 \paragraph{Decison Tree Algorithms}
 \begin{itemize}\itemsep0em 
 	\item CART
