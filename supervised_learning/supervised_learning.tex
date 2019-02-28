@@ -280,7 +280,7 @@ This allows to formulate the general form of a binary decision tree algorithm as
 \subsection{Impurity measures for classification}
 Intuitively a "good" split is a split that makes the child nodes purer. That is, the probability of a sample falling into a child node should be sharply peaked at one class label. Rather than working with the concept of purity, the complementary concept is used\cite{cart84}:
 
-\begin{definition}[Impurity function] An impurity function is a function $\phi: M \rightarrow \mathbb R$, where $M=\left\{p \mid p\in [0,1]^J, ~ \sum_{j=1}^J p_j=1\right\}$ such that
+\begin{definition}[Impurity function] \label{def:impurity_function}An impurity function is a function $\phi: M \rightarrow \mathbb R$, where $M=\left\{p \mid p\in [0,1]^J, ~ \sum_{j=1}^J p_j=1\right\}$ such that
 	\begin{itemize}\itemsep0em 
 		\item $\phi$ is a maximum only the point $\left(\frac{1}{J}, \frac{1}{J}, \dots, \frac{1}{J}\right)$
 		\item $\phi$ is a minimum at the point  $\left(1, 0, \dots, 0\right)$
@@ -296,34 +296,42 @@ where $p(c_1\mid \tau), ~ c_i \in \Omega_t$ are the conditional class probabilit
 \end{definition}
 Having defined the impurity measure at a given node we would like to obtain a measure on how beneficial it is to add further child nodes (i.e., further partition sample space).
 \begin{definition}[Goodness of split] \label{def:goodness_of_split}
-	Let $C(\tau)=\left\{\tau' \mid \tau' \text{ is child of }\tau\right\}$. Then the goodness of split is defined as
+	Let $\mathcal C_\tau=\left\{\tau' \mid \tau' \text{ is child of }\tau\right\}$. Then the goodness of split at node $\tau$ is defined as
 	\begin{align*}
-		\Delta i(\tau) = i(\tau) - \sum_{\tau' \in C(\tau)} p(\tau' \mid \tau) i(\tau')
+		\Delta i(\tau, \mathcal C_\tau) = i(\tau) - \sum_{\tau' \in \mathcal C_\tau} p(\tau' \mid \tau) i(\tau')
 	\end{align*} 
 \end{definition}
 Note the difference between $p(\tau' \mid \tau)$ and $p(\tau' \mid \tau, x)$. While in the latter expression there is exactly one child node that has probability one (by construction of a decision tree), the former approach is less trivial and is typically approximated by the proportions of the active training sets of the child nodes with respect to the parent node.
 
-So the basic idea of Definition \ref{def:goodness_of_split} is to take as measure the expected reduction of the node impurity measure upon adding further child nodes. Intuitively we would expect $\Delta i(\tau) \geq 0$. That is any addition of child nodes leads to a decrease in the goodness of split and in the worst case it does not  decrease the goodness of split. For a binary (multi class) decision tree, the class of impurity functions that fulfill this intuition may be characterized by \cite[Appendix of Chap. 4]{cart84}
+So the basic idea of Definition \ref{def:goodness_of_split} is to take as measure the expected reduction of the node impurity measure upon adding further child nodes. Intuitively we would expect $\Delta i(\tau) \geq 0$. That is any addition of child nodes leads to a decrease in the goodness of split and in the worst case it does not  decrease the goodness of split. The class of impurity functions that fulfill this intuition may be characterized by \cite[Appendix of Chap. 4]{cart84}, \cite{Ripley1995}:
 \begin{theorem} \label{thm:classification_impurity_functions}
-	Let there be any binary partition of node $\tau$ with child nodes $\{\tau_l, \tau_r\}$. If the impurity function is strictly concave, then the goodness of split 
+	%Let there be any binary partition of node $\tau$ with child nodes $\{\tau_l, \tau_r\}$. 
+	If the impurity function is strictly concave, then the goodness of split 
 	\begin{align*}
-	\Delta i(\tau) \geq 0,
+	\Delta i(\tau, \mathcal C_\tau) \geq 0,
 	\end{align*}
-	with equality if, and only if, $p(c_i \mid \tau_l) =  p(c_i \mid \tau_r) ~ \forall c_i \in \Omega_t$. 
+	with equality if, and only if, $p(c \mid \tau') =  p(c \mid \tau), ~ \forall \tau' \in \mathcal C_\tau$ and $\forall c \in \Omega_\tau$. 
 \end{theorem}
 \begin{proof}
-	Via Jensen inequality \cite{Ripley1995}.
+	First show that $\sum_{\tau' \in \mathcal C_\tau} p(\tau' \mid \tau) p(c\mid\tau') =  p(c\mid\tau)$. Let $\tau'$ be a child node of $\tau$. Then, $p(\tau' \mid \tau) p(c\mid\tau') = \frac{p(\tau', \tau)}{p(\tau)}   p(c\mid\tau') = \frac{p(\tau \mid \tau') p(\tau')}{p(\tau)}   p(c\mid\tau') = p(c, \tau' \mid \tau)$, because $p(\tau \mid \tau') =1$ as $\tau'$ is child of $\tau$. Thus for the sum $\sum_{\tau' \in \mathcal C_\tau}  p(c, \tau' \mid \tau) =  p(c \mid \tau)$.  Apparently $p(\tau' \mid \tau) \geq 0$ and $\sum_{\tau' \in \mathcal C_\tau} (\tau' \mid \tau) = 1$. So we can use Jensens inequality to show the inequality statement:
+	\begin{align*}\sum_{\tau' \in \mathcal C_t} p(\tau'\mid \tau) i(\tau') &= \sum_{\tau' \in \mathcal C_t} p(\tau'\mid \tau) \phi(p(c_1\mid \tau'),\dots, p(c_J\mid \tau')) \\
+	& \leq \phi \left(\sum_{\tau' \in \mathcal C_t} p(\tau'\mid \tau)  p(c_1\mid\tau), \dots,  \sum_{\tau' \in \mathcal C_t} p(\tau'\mid \tau)  p(c_J\mid\tau)\right) \\
+	& = \phi \left(p(c_1\mid\tau), \dots, p(c_J\mid\tau)\right)  \\
+	& =  i(\tau).
+	\end{align*}
+	Now assume that $p(c \mid \tau') =  p(c \mid \tau), ~ \forall \tau' \in \mathcal C_\tau$ and $\forall c \in \Omega_\tau$. Then $\sum_{\tau' \in \mathcal C_t} p(\tau'\mid \tau) i(\tau') = i(\tau)\sum_{\tau' \in \mathcal C_t} p(\tau'\mid \tau) = i(\tau)$. Therefore $\Delta i(\tau, \mathcal C_\tau) = 0$. 
+	
+	\textbf{Todo:opposite direction}
 \end{proof}
-\paragraph{Question:} Note that theorem \ref{thm:classification_impurity_functions} only holds for a binary node split. Is there a generalization for arbitrary node splits? 
 
-So for a binary decision tree  strictly concave impurity functions are of interest. In practice, these are  
+The most common strictly concave impurity functions encountered in practice are:
 	\begin{align}
     i(\tau) &= - \sum_{c \in \Omega_t} p(c \mid t) \log_2 p(c \mid t) \quad \text{(Shannon Entropy)} \label{eq:shannon_impurity}, \\ 
     i(\tau) &= \sum_{c \in \Omega_t} p(c \mid \tau) (1 - p(c \mid \tau)) \quad \text{(Gini Index)} \label{eq:gini_impurity}.
     \end{align}
 For practical calculations the empirical probabilities based on the training data are taken. Note that the goodness of split of the Shannon impurity is just the information gain. 
 
-Comparing the Gini and Shannon impurity\cite{Breiman1996}, Gini prefers splits that put the largest class in one pure node while Shannon prefers to balance the size of the child nodes. For problems with small number of classes they should give similar results. However for many classes, Gini may produce trees that are too unbalanced high up in the tree, while the Entropy lacks uniqueness. Note that there are many other impurity measures proposed in the literature \cite{gini_vs_twoing, epub1833,  BERZAL200331}. 
+Comparing the Gini and Shannon impurity \cite{Breiman1996}, Gini prefers splits that put the largest class in one pure node while Shannon prefers to balance the size of the child nodes. For problems with small number of classes they should give similar results. However for many classes, Gini may produce trees that are too unbalanced high up in the tree, while the entropy lacks uniqueness. Note that there are many other impurity measures proposed in the literature \cite{gini_vs_twoing, epub1833,  BERZAL200331}. 
 
 Empirically, as long as the impurity function is reasonable, it rather effects the structure of the decision tree (and thus the interpretation) rather than the accuracy.
 
@@ -345,21 +353,35 @@ For the regression problem  impurity functions seem to be less well characterize
 	i(\tau) & = \int dy\,L(y, f(x)) p(y \mid \tau) \nonumber \\
 	 & =  \int dy\,(y -  \hat y_\tau)^2 \, p(y \mid \tau), \quad \hat y_\tau=\int  y' p(y' \mid \tau)\, dy'. \label{eq:impurity_measure_regression}
 \end{align}
-\paragraph{Remark.} There is an interesting relation between the expected loss (\ref{eq:impurity_measure_regression}) and the Gini index (\ref{eq:gini_impurity}). Consider a two class problem, $c_1=0$ and $c_2=1$. The Gini index is given by $i_G(\tau) = 2\, p(c_1|\tau)\, p(c_2|\tau)$. On the other hand, if we were treating the classification problem as a regression, the expected loss (\ref{eq:impurity_measure_regression}) translates into $i_R(\tau) = \sum_i (c_i -\hat c)^2 p(c_i\mid \tau)$ with $\hat c = \sum_i c_i\,p(c_i \mid \tau) = p(c_2\mid \tau)$. Therefore, $i_R =  p(c_1|\tau)\, p(c_2|\tau)$. Therefore, 
-$$i_R(\tau) = i_G(\tau) / 2$$. So the Gini index for a two class problem is up to a factor of two equivalent to the expected loss in the regression problem.  In this sense the impurity function \ref{eq:impurity_measure_regression} is applicable to both, a regression problem and a binary classification problem. 
+\paragraph{Remark.} There is an interesting relation between the expected loss (\ref{eq:impurity_measure_regression}) and the Gini index (\ref{eq:gini_impurity}) for binary classification tasks. Consider a two class problem, $c_1=0$ and $c_2=1$. The Gini index is given by $i_G(\tau) = 2\, p(c_1|\tau)\, p(c_2|\tau)$. On the other hand, if we were treating the classification problem as a regression, the expected loss (\ref{eq:impurity_measure_regression}) translates into $i_R(\tau) = \sum_i (c_i -\hat c)^2 p(c_i\mid \tau)$ with $\hat c = \sum_i c_i\,p(c_i \mid \tau) = p(c_2\mid \tau)$. Therefore, $i_R =  p(c_1|\tau)\, p(c_2|\tau)$. Therefore, 
+$$i_R(\tau) = i_G(\tau) / 2.$$ So the Gini index for a two class problem is up to a factor of two equivalent to the expected loss in the regression problem.  In this sense the impurity function (\ref{eq:impurity_measure_regression}) is applicable to both, a regression problem and a binary classification problem. 
 
-\subsection{Generating Node splits}
-\paragraph{Decison Tree Algorithms}
+\subsection{Generating bianary node splits}
+Once the impurity function is defined the optimal node splits may be found. Node splits are just partitions of the active sample space. While partitions are quite generic in practice often binary node splits are used. 
+
+\paragraph{Categorical features}
+For a categorical feature with $L$ levels $\left\{l_1, \dots, l_L\right\}$ there are in principle $2^{L-1} - 1$  partitions. For the  binary classification problem this may be reduced by
+\begin{theorem}\label{thm:categorical_splits}
+	Suppose a binary classification problem and given a stricly concave impurity function. For a categorical feature order the levels in increasing $p(c=1 \mid  l = l_i)$. Then a partition of the form $\left\{l_1, \dots, l_k\right\} \cup \left\{l_k+1, \dots, l_L\right\}$ maximises the goodness of split.
+\end{theorem}
+\begin{proof}
+	A proof may be found in  Refs. \cite{Ripley1995, cart84}.
+\end{proof}
+Intuitively, all level leading to high probabilities of one class should be put together. 
+Unfortunately theorem \ref{thm:categorical_splits} does not extend to multi class problems.
+In practice exhaustive searches are applied for features with $L \leq 10$ and random sampling for features with more categories \cite{understanding_random_forests}.
+\subsection{Decison Tree Algorithms}
+Having all ingredients at hand we can summarize the specific decision tree algorithms. They mainly differ in the pruning strategies and the exact way to split nodes.
 \begin{itemize}\itemsep0em 
 	\item CART
 	\item C4.5
 	\item Patient rule induction method (PRIM)
 	\item Multivariate adaptive regression splines (MARS)
 	\item Hierarchical mixture of experts (HME)
+	\item Combining neural networks and decision trees \cite{DBLP:journals/corr/abs-1711-09784}
 	\item Bayesian approaches (Denison et al., 1998; Chipman et al., 1998, 2002, 2010)
 \end{itemize}
 Disadvantages: split only parallel to features.
-\paragraph{Categorical predictors}
 \paragraph{Missing values}
 Instead of the standard procedures with missing values (throwing away datapoints or fetures with missing values or imputing) decision trees offer additional possibilities:
 \begin{itemize}
