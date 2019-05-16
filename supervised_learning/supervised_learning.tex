@@ -59,7 +59,7 @@ gives the Bayes model (by construction). Expression \ref{eq:bayes_model} may be 
 \begin{align}
 	f_B (x) = \underset{y\in \Omega_t}{\operatorname{argmin}} ~	E_{Y~|~X=x} \left( L(Y, y)\right).
 \end{align}
-\paragraph{Example.} In a  regression problem with squared error loss Bayes model is the is the conditional expectation value\footnote{Because $\partial y \int  (y' -  y)^2 p(y' | x)\, dy' \overset{!}{=} 0  \Rightarrow y =  \int  y' p(y' ~ | ~  x)\, dy'  =  E_{Y|X=x} \left(Y\right),$
+\paragraph{Example.} In a  regression problem with squared error loss the Bayes model is the conditional expectation value\footnote{Because $\partial y \int  (y' -  y)^2 p(y' | x)\, dy' \overset{!}{=} 0  \Rightarrow y =  \int  y' p(y' ~ | ~  x)\, dy'  =  E_{Y|X=x} \left(Y\right),$
 where the fact that $\int p(y'~ |~ x) \, dy' = 1$ was used because $p(y'|x) $ is a pdf in $y'$.}, \begin{align} \label{eq:bayes_regression}
 f_B(x) = \int  y' p(y' ~ | ~ x)\, dy'.
 \end{align} 
