@@ -21,6 +21,7 @@
 
 \begin{document}
 \title{Supervised Learning}
+\author{Viktor}
 \maketitle
 
 In a supervised learning problem we have a learning set $\mathcal S$ of 
@@ -248,13 +249,13 @@ Among all possible decision trees for a learning task, training corresponds to f
 	x = x' ~  \forall (x,y), (x',y') \in  \mathcal S_\tau.
 	\end{align}
 	As we are aiming to minimize the training set error, in the first case it does not make sense to further refine sample space, whereas in the second case sample space cannot be further partitioned.
-	\item \textbf{Pre-pruning} aims prevent to grow too deep trees and thus overfitting. This approach introduces additional stopping criteria (maximum depth of terminal node, minimum number of training examples in a leaf node, threshold for the total decrease in impurity, minimum number of training example in each child node upon node split)
-	\item \textbf{Post-pruning:} this is an alternative to pre-pruning. First the tree is fully developed and then nodes are sequentially removed that degrade the generalization error. While post-pruning typically works better for decision  trees, pruning in general is no longer required for tree based ensemble methods. 
+	\item \textbf{Early stopping} aims prevent to grow too deep trees and thus overfitting. This approach introduces additional stopping criteria (maximum depth of terminal node, minimum number of training examples in a leaf node, threshold for the total decrease in impurity, minimum number of training example in each child node upon node split)
+	\item \textbf{Pruning:} this is an alternative to early stopping. First the tree is fully developed and then nodes are sequentially removed that degrade the generalization error. While pruning typically works better for decision  trees, pruning in general is no longer required for tree based ensemble methods. 
 \end{itemize}
 This allows to formulate the general form of a binary decision tree algorithm as given in algorithm \ref{algo:decision-tree}.
 
 \begin{algorithm} 
-	\caption{Greedy induction of a binary decision tree with pre-pruning}\label{algo:decision-tree}
+	\caption{Greedy induction of a binary decision tree with early stopping}\label{algo:decision-tree}
 	\begin{algorithmic}[1]
 		\Procedure{Build decision tree $(\mathcal S)$ }{} 
 		\State Create a decision tree $f$ with root node $\tau_0$ 
@@ -344,7 +345,7 @@ Empirically, as long as the impurity function is reasonable, it rather effects t
 \end{align}    
 The corresponding goodness of split is then the reduction of the misclassification  error upon adding child nodes. 
 Despite the natural attractiveness of this impurity function it has two serious flaws: 1) it could lead to scenarios where all possible node splits have zero goodness of split and 2) it does not account for beneficial shifts in the probability distributions of the child nodes. 
-The first point may happen when all child nodes have the same majority class \cite{cart84, understanding_random_forests} and thus, making this impurity function useless. The second point is problematic within the greedy tree growing algorithm. Thus, the misclassification error seems to short-sighted upon growing a tree \cite{cart84, hasties}.  On the other hand the misclassification rate is useful in post-pruning.
+The first point may happen when all child nodes have the same majority class \cite{cart84, understanding_random_forests} and thus, making this impurity function useless. The second point is problematic within the greedy tree growing algorithm. Thus, the misclassification error seems to short-sighted upon growing a tree \cite{cart84, hasties}.  On the other hand the misclassification rate is useful in pruning.
 
 \subsection{Impurity measures for regression}
 For the regression problem  impurity functions seem to be less well characterized in the literature. The reason is that the regression pendant of (\ref{eq:impurity_misclassification_rate})  is less problematic (in classification the main problems are rooted in the few number of classes). Computing the expected loss (\ref{eq:expected_cond_loss_decision_tree}) for a decision tree at node $\tau$ with the corresponding Bayes model for the squared loss gives the \textit{impurity function for a regression tree}:
@@ -370,6 +371,22 @@ For a categorical feature with $L$ levels $\left\{l_1, \dots, l_L\right\}$ there
 Intuitively, all level leading to high probabilities of one class should be put together. 
 Unfortunately theorem \ref{thm:categorical_splits} does not extend to multi class problems.
 In practice exhaustive searches are applied for features with $L \leq 10$ and random sampling for features with more categories \cite{understanding_random_forests}.
+\subsection{Pruning}
+Early stopping is one heuristics to avoid over fitting by growing too large trees. Pruning tackles this problem by first fully growing a tree and then removing branches in a second step. While there are several approaches in the literature to pruning we consider  cost-complexity pruning \cite{cart84}.
+\begin{definition}[Pruning]
+	Given a tree $T$
+	\begin{itemize}
+		\item A subtree of $T$ is a subgraph of $T$ that is also a tree.
+		\item A rooted subtree of $T$ is a subtree of $T$ with the same root as $T$.
+		\item A pruned subtree is a rooted subtree. 
+	\end{itemize}
+\end{definition}
+
+
+\section{Hierarchical mixture of experts}
+Very similar to decision trees but with different notation \cite{hasties}. Non terminal nodes are called gates and terminal nodes are called experts. The experts are classiers or regressors on the whole dataset (in contrast to decision trees). Gates make a soft probability split whereas decision tree make a hard one (based on splitting criteria).
+\begin{comment}
+
 \subsection{Decison Tree Algorithms}
 Having all ingredients at hand we can summarize the specific decision tree algorithms. They mainly differ in the pruning strategies and the exact way to split nodes.
 \begin{itemize}\itemsep0em 
@@ -408,7 +425,7 @@ Instead of the standard procedures with missing values (throwing away datapoints
 \section{Bias-Variance Decomposition}
 \section{Model selection}
 \section{Feature selection}
-
+\end{comment}
 \bibliographystyle{plain}
 \bibliography{paper}
 \end{document}

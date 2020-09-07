@@ -37,17 +37,17 @@ So, first we need to specify a family of variational densities $\mathcal Q$ and 
 \end{align}
 The density that maximizes the ELBO thus compromises between  i) putting most probability weight on $z$ where the posterior $p(x|z)$ is large and ii) beeing close to the prior $p(z)$. Furthermore if we assume that the $N$ observed data points are iid of the form $x = x_1, \dots, x_N$  the first expression reads $\langle \log p(x | z) \rangle _{q(z)} = \sum _{i = 1} ^N\langle \log p(x_i | z) \rangle _{q(z)}$. Thus, the first term becomes more important for large number of observed data points. But this is just in line with the usual Bayesian behavior.
 
-Furthermore the ELBO bounds the evidence $p(x)$,
+Furthermore the ELBO bounds the (log) evidence $p(x)$,
 \begin{align}
-	p(x) = \mathcal{F}(q) + \kl{q(z)}{p(z|x)} \geq \mathcal{F}(q)
+	\log p(x) = \mathcal{F}(q) + \kl{q(z)}{p(z|x)} \geq \mathcal{F}(q)
 \end{align}
 because $D(\cdot) \geq 0$. This property lends ELBO its name and has been used for model selection under the assumption that the ELBO is a good approximation to the marginal likelihood. However, this approach is not rigorous. So we will just use the ELBO as objective function for the optimization problem (which is rigorous).
 
-The KL-divergence enjoys the property $\kl{q}{p} = 0 \Leftrightarrow q=p$. Assume a maximizer $q^*$ of the ELBO, which is also a minimizer of the KL-divergence. Now, if the KL-divergence  $\kl{q^*(z)}{p(z|l)} = 0$ then $q^*$ is the true posterior. However this need not be the case as the variational family typicall suffers from severe restrictions due computational resources. In this case it is not clear how "good" the minimizer of the KL-divergence approximates the posterior \cite{minka2005divergence, Leisink01atighter}.
+The KL-divergence enjoys the property $\kl{q}{p} = 0 \Leftrightarrow q=p$. Assume a maximizer $q^*$ of the ELBO, which is also a minimizer of the KL-divergence. Now, if the KL-divergence  $\kl{q^*(z)}{p(z|l)} = 0$ then $q^*$ is the true posterior. However this need not be the case as the variational family typically suffers from severe restrictions due computational resources. In this case it is not clear how "good" the minimizer of the KL-divergence approximates the posterior \cite{minka2005divergence, Leisink01atighter}.
 
 \subsection{Mean-field approximation}
 
-\begin{definition}[Mean field approximation]
+\begin{definition}[Mean field approximation]\label{def:mean_field}
 	A family of pdfs $q_Z(z) \in \mathcal Q$ is called mean field approximation if it is of the form $q_Z(z) = \prod _\ell q_{Z_\ell}(z_\ell)$ with  
 	$q_{Z_\ell}(z_\ell)\in\mathcal Q_\ell $ and $Q = \otimes_\ell\mathcal Q_\ell$.
 \end{definition}
@@ -85,20 +85,128 @@ Note that (\ref{eq:mean_field_update}) can be equivalently written in terms of c
 because $\langle \log p(x, z_\ell, z_{-\ell}) \rangle_{q_{z_{-\ell}}} = \langle \log p(z_\ell | x, z_{-\ell}) \rangle_{q_{z_{-\ell}}} - \langle \log p(x, z_{-\ell}) \rangle_{q_{z_{-\ell}}}$ and the second term does not depend on $q_\ell(z_\ell)$ and thus may be absorbed into the normalization factor. 
 \begin{itemize}
 \item  Theorem \ref{thm:elbo_kl} and \ref{thm:mf_elbo} establish the best approximation to the KL-divergence of the true posterior within a factorized family of variational densities. Recall $q(z)\equiv q(z|x)$ and $z=\{z_1,\dots,z_\ell, \dots\}$
-\item Integrating out (\ref{eq: mean_field_joint}) shows that the approximation to the marginal posterior corresponds to the variational component, 
+\item Integrating out definition \ref{def:mean_field} shows that the approximation to the marginal posterior corresponds to the variational component, which is also complete conditional. 
 \begin{align}
-	q^*(z_\ell | x) \equiv  q^*(z_\ell) = q_\ell(z_\ell)
+	q(z_\ell | x) \equiv  q(z_\ell) = q_\ell(z_\ell) \\ 
+	q(z_\ell | z_{-\ell}, x) = q_\ell(z_\ell) 
 \end{align}
-\item   From Theorem \ref{thm:mf_elbo}  $q^*_\ell(z_\ell)$  depends on all other  approximate pdfs of random variables. In practice this yields an iterative scheme of computation, the \textit{coordinate ascent mean-field variational inference algorithm} (CAVI)\cite{blei2016variational, Bishop:2006:PRM:1162264}. Especially from (\ref{eq:conditional_cavi_update}) the connection to the Gibbs sampler in the MCMC approach \cite{doi:10.1080/01621459.1990.10476213, Geman:1984:SRG:2286442.2286617} can be seen: both, CAVI and Gibbs sampling use the complete conditional $p(z_\ell | x, z_{-\ell})$ in their update steps.	
+\item   From Theorem \ref{thm:mf_elbo},  $q^*_\ell(z_\ell)$  depends on all other  approximate pdfs of random variables. In practice this yields an iterative scheme of computation, the \textit{coordinate ascent mean-field variational inference algorithm} (CAVI)\cite{blei2016variational, Bishop:2006:PRM:1162264}. This fix-point procedure is summarized in Algorithm \ref{algo:cavi}. The short-hand notation that
+$q^{(n+1)}_{z_{<\ell}}\cdot q^{(n)}_{z_{>\ell}} \equiv q^{(n+1)}_1 \dots q^{(n+1)}_{\ell-1} q^{(n)}_{\ell} \dots q^{(n)}_{\ell} $ was used to indicate that the updated variational densities are used as soon as they are available \cite{Bishop:2006:PRM:1162264}. 
+
+\item Especially from Eq (\ref{eq:conditional_cavi_update}) the connection between CAVI and the Gibbs sampler in the MCMC approach \cite{doi:10.1080/01621459.1990.10476213, Geman:1984:SRG:2286442.2286617} can be seen. Both use the complete conditional $p(z_\ell | x, z_{-\ell})$ in their update steps.	
+
 \item  In general this formulation is not very useful for  practical computations. Thus  typically further structure is incorporated by using the exponential family as variational family, which leads to much simpler CAVI update equations and allows variational inference to scale to massive data \cite{blei2016variational, Bernardo03thevariational, MAL-001}.
 \end{itemize}
+ \begin{algorithm}[t] \label{algo:cavi}
+ 	\SetAlgoLined
+ 	\textbf{Input:} A model $p(x,z)$ and a dataset $x$ \\
+ 	\KwResult{Maximizer of the ELBO}
+ 	\textbf{Initialize:} variational densities $q_\ell(z_\ell), ~ \ell = 1 \dots m$ \\
+ 	$n = 0$ \\
+ 	\While{While  the ELBO   is not converged}{
+ 		\For{$\ell = 1 \dots m $}{
+ 				$q^{(n+1)}(z_\ell) \propto \exp{\langle \log p(x, z_\ell, z_{-\ell}) \rangle_{q^{(n+1)}_{z_{<\ell}}\cdot q^{(n)}_{z_{>\ell}}}}$
+ 		}
+ 	Compute ELBO $\mathcal F(q^{(n+1)})$ from Eq. (\ref{def:elbo})\\
+ 	$n = n+1$
+ 	}
+ \textbf{return }$q^{(n)}(z) = \prod_{\ell =1}^{m} q^{(n)}_\ell(z_\ell)$
+ 	\caption{Coordinate ascent variational inference}
+ \end{algorithm} 
+\paragraph{Variational Bayesian Expectation-Maximization (VB-EM).}So far there was no interpretation on the latent variables. Consider a model with latent variables $z=\{z,\theta\}$, where $\theta$ are model parameters and $z$ are hidden (e.g., local) variables.  The Variational Bayesian Exptectation-Maximisation (VB-EM) \cite{Beal03variationalalgorithms, Bernardo03thevariational}  is just a consequence of Theorem \ref{thm:mf_elbo} together with the mean-field ansatz $q(z,\theta) = q_z(z)q_\theta(\theta)$, 
+\begin{align}
+q_z(z) &\propto \exp{\langle \log p(z, x, \theta) \rangle_{q_{\theta}}}, \label{eq:vb1-e-step}  \\
+q_\theta(\theta) &\propto \exp{\langle \log p(x, z, \theta) \rangle_{q_z}}, \label{eq:vb1-m-step}
+\end{align}
+which can be equivalently written as
+\begin{align}
+	q_z(z) &\propto \exp{\langle \log p(z, x | \theta) \rangle_{q_{\theta}}}, \label{eq:vb-e-step}  \\
+	q_\theta(\theta) &\propto p(\theta) \exp{\langle \log p(x, z | \theta) \rangle_{q_z}}. \label{eq:vb-m-step}
+\end{align}
+This follow $p(x,z,\theta) = p(x,z | \theta)p(\theta)$. The residual contribution  $\exp{\langle \log p(\theta) \rangle_{q_{\theta}}}$ may be absorbed in the normalization factor in (\ref{eq:vb-e-step}) and 
+$\exp{\langle \log p(\theta) \rangle_{q_{z}}} = p(\theta)$ in (\ref{eq:vb-m-step}). 
+  
+\subsection{Parametric variational distributions}  
   
 \subsection{Point estimates}  
-So far there was no interpretation on the latent variables. Consider a model with latent variables $z=\{z,\theta\}$, where $\theta$ are model parameters and $z$ are hidden (e.g., local) variables. Very often $\theta$ is the only quantity of interest, either 1) as a marginal posterior pfd, $\int p(\theta, z|x)\,dz$, or 2) by a point-estimate of it (MAP)  $\operatorname{argmax}_\theta \int p(\theta, z|x)\,dz$, or 3) as a maximum likelihood estimate (MLE)  $\operatorname{argmax}_\theta \int p(x, z|\theta)\,dz$. 
-
-Clearly, the first case can be obtained by making the mean-field ansatz $q(z,\theta) = q(z)q(\theta)$ and using the machinery of Theorem \ref{thm:mf_elbo}.
+ Very often $\theta$ is the only quantity of interest, either 1) as a marginal posterior pdf, $\int p(\theta, z|x)\,dz$, or 2) by a point-estimate of it (MAP)  $\operatorname{argmax}_\theta \int p(\theta, z|x)\,dz$, or 3) as a maximum likelihood estimate (MLE)  $\operatorname{argmax}_\theta \int p(x, z|\theta)\,dz$.  Clearly, the first case can be approximately obtained by VB-EM or equivalently, the mean-field ansatz $q(z,\theta) = q(z)q(\theta)$ and using the machinery of Theorem \ref{thm:mf_elbo}.
+ 
   
- \begin{comment}
+\paragraph{Expectation-Maximisation}
+The aim of the expectation maximisation (EM) algorithm is provide a maximum likelihood estimate (MLE) of the model parameters $\theta$ under hidden random variables $Z$, $\operatorname{argmax}_\theta p(x | \theta)  = \operatorname{argmax}_\theta \int p(x, z | \theta)\,dz$.
+
+
+\begin{theorem} \label{em:bound}
+	Let there be given a variational family $q\in\mathcal Q$. Then 
+	\begin{align} \label{em:functional}
+			\mathcal{F}(q, \theta) :=  \langle \log p(x,z | \theta) \rangle _{q(z)} - \langle \log q(z) \rangle _{q(z)} 
+	\end{align}
+	is a lower bound to the log-likelihood $\log p(x|\theta) \geq \mathcal{F}(q, \theta) ~ \forall q $ with equality iff $q(z)=p(z|x,\theta) \in \mathcal Q$.
+\end{theorem}
+\begin{proof}
+	We have 	$\log p(x | \theta) = \mathcal{F}(q, \theta) + \kl{q(z)}{p(z|x, \theta)} \geq \mathcal{F}(q, \theta)$. Equality follows from the property of the KL-divergence  $\kl{q}{p} = 0 \Leftrightarrow q=p$
+\end{proof}
+
+Note that the variational densities only depend on the observed data $q(z) \equiv q(z|x)$ (but not on parameter $\theta$). In contrast to the fully Baysian variational methods above we need the bounding property of theorem \ref{em:bound} in order to lend the maximizer of $\mathcal{F}(q, \theta)$ an interpretation as beeing the MLE. 
+
+For a given variational family $\mathcal Q$ we can now formulate the \textit{constraint} (with respect to $\mathcal Q$ ) EM Algorithm \cite{Beal03variationalalgorithms} by optimizing functional (\ref{em:functional}):
+\begin{align}
+q^*(z) & =  \operatorname{argmax}_q  \mathcal F (q, \theta) \text{~ (E-step)}\\
+\theta^* &= \operatorname{argmax}_\theta  \mathcal F (q, \theta)  \text{~ (M-step)},  
+\end{align}
+where $\operatorname{argmax}_\theta  \mathcal F (q, \theta)  =	\operatorname{argmax}_\theta \langle \log p(x, z | \theta) \rangle_{q}$ because $q(z)$ does not depend on $\theta$.
+
+If the varitional family is sufficiently large such that $=p(z|x,\theta) \in \mathcal Q$ (in other words if the conditional posterior $p(z|x,\theta)$ is computable) the the equality condition of theorem  \ref{em:bound} can be used to arrive at the \textit{unconstraint}, or classical EM algorithm. \cite{Dempster77maximumlikelihood, Neal:1999:VEA:308574.308679} 
+\begin{align}
+q^*(z) & =  p(z |x, \theta)  \text{~ (E-step)}\\
+\theta^* &= 	\operatorname{argmax}_\theta \langle \log p(x, z | \theta) \rangle_{q}   \text{~ (M-step)}. 
+\end{align} 
+The M-step follows by taking the functional derivative with respect to $q(z)$ under the constraint $\int q(z)\, dz = 1$. While the constraint EM converges to lower bound of the log-likelihood the uncontraint converges to a local maximum of the log-likelihood. Both variants lead to an iterative algorithm (Algorithm \ref{algo:classical_em}).
+
+ \begin{algorithm}[t] \label{algo:classical_em}
+    E-step: $q^{(n)}(z) = p(z|x,\theta^{(n-1)})$ \\
+    M-step: $\theta^{(n)}(z) = \operatorname{argmax}_\theta \langle \log p(x, z | \theta) \rangle_{q^{(n)}} $
+	\caption{Classical EM Algorithm ($n$-th update)}
+\end{algorithm} 
+
+Theorem \ref{em:bound} and the (un)constraint EM formulas are only statements on what happens at the maximizer but not \textit{how} the maximizer is computationally approached. This allows to speed up algorithm \ref{algo:classical_em} for large data sets. Consider a case with global model parameters $\theta$ and local hidden random variables $Z = \{Z1,\dots Z_N\}$ together with $N$ observations $X = \{X_1\dots X_N\}$ such that $p(x,z|\theta) = \prod p(x_i,z_i|\theta)$.  Then choose $q(z)= \prod q_i(z_i)$.  If the goal is to learn $\theta$ there is no need to compute the E-step for all datapoints at each iteration. It is enough to perform the E-step for only one datapoint component as this increases $\mathcal F(q, \theta)$ for fixed $\theta$ (algorithm \ref{algo:sparse_classical_em}). Eventually this leads to "sparse" algorithms which have been shown to converge faster \ref{Neal:1999:VEA:308574.308679}.
+ \begin{algorithm}[t] \label{algo:sparse_classical_em}
+	Choose some data point $i$ to be updated 
+	\begin{align*}
+		\text{E-step:\quad} q^{(n)}_k(z) &= \begin{cases}
+					p(z_i|x_i,\theta^{(n-1)}) ~ k=i \\
+					q^{(n)}_k(z)  ~ k\neq i 
+	               \end{cases} \\
+	               q^{(n)}(z) &=  \prod_k q^{(n)}_k(z) \\
+	    \text{M-step:\quad}  \theta^{(n)}(z) & = \operatorname{argmax}_\theta \langle \log p(x, z | \theta) \rangle_{q^{(n)}}
+	\end{align*} 
+	\caption{Sparse EM Algorithm ($n$-th update)}
+\end{algorithm}
+\begin{comment}
+ 
+\paragraph{Relation between EM and variational inference.}
+Basic idea
+\begin{itemize}
+	\item Uniform prior, $p(\theta)$. In principle this could be a degenerate pdf (think of $\theta \in \mathbb R$). To this end take $I_k \in \mathbb{R}^n$. Then the uniform distribution
+	$p_k(\theta) = 1/V(I_k)$, with $V$ beeing a volume. Now, the posterior becomes
+	\begin{align*}
+		p_k(\theta | x) = \frac{p(x | \theta) p_k(\theta)}{\int_{\theta'\in I_k} p(x | \theta') p_k(\theta')\, d\theta} = \frac{p(x | \theta) }{\int_{\theta'\in I_k} p(x | \theta')\, d\theta'},
+	\end{align*}
+	which enjoys beeing independent of $p(I_k)$. Taking the limit $I_k \rightarrow \mathbb{R}^n$ gives, 
+	\begin{align*}
+		p(\theta | x) = \frac{p(x | \theta)}{\int_{\theta'\in \mathbb{R}^n} p(x | \theta')\, d\theta'}.
+	\end{align*}
+	This establishes $p(\theta | x) \propto p(x | \theta)$ for a uniform, possibly degenerate prior $p(\theta)$. While the functions differ  the maxima are the same for fixed $x$ (training data), $\operatorname{argmax}_\theta p(x | \theta) = \operatorname{argmax}_\theta p(\theta | x)$, that is the MLE and MAP estimate coincide in this case. 
+	
+	Setting $p(\theta)$ to the uniform distribution allows to absorb $p(\theta)$ into the normalization constant in (\ref{eq:vb-m-step}) for the further proof.
+	\item Use Delta distributions as variational family for parameter $\theta$. 
+	\item In order to avoid the 
+	 of taking the log of $\delta$, we use the dirac sequence for the proof. We then need to show: 1) the $\theta$ - update needs to remain in that dirac sequence and 2) taking the limit yields indeed the EM algorithm.
+	 
+	
+\end{itemize}
+  
+ 
  	
 
  
