@@ -35,7 +35,8 @@ Time series are commonly thought as a superposition of several components
 	\item \textit{Autocorrelation}:
 	\item \textit{Error}: unpredictable component of time series.
 \end{itemize}
-The aim to time series modelling is to capture all effects until only error (=noise) is left. More precisely if there ist still come uncaptured trend, seasonal, cylce or autocorrelation then we can be pretty sure that we can improve the model. However, this does not imply that a model that just has unexplained white noise cannot be improved.
+
+Many time-series models can be classified as additive, multiplicative, or a combination of these components \cite{hyndman_forecasting_with_exponential_smoothing}. The aim to time series modelling is to capture all effects until only error (=noise) is left. More precisely if there ist still come uncaptured trend, seasonal, cylce or autocorrelation then we can be pretty sure that we can improve the model. However, this does not imply that all models that just exhibit unexplained noise perform equally.  
  
 \paragraph{Model diagnostics.}
 The autocorrelation function (ACF) is the Pearson correlation of a time dependent random variable $Y_t$ with itself shifted in time by $\tau$.
@@ -60,6 +61,41 @@ The autocorrelation function depends on $\tau$. For white noise $95\,\%$ of its 
 \end{definition}
 
 
+\paragraph{Transformations.}
+\begin{itemize}
+	\item \textbf{Calender adjustments.} Sometimes pattern occur that are due to different number of days in a month or if there is some additional known contraint in the data  (data points are not generated on sundays). It is much easier to remove this structure by changing to an appropriate time unit than trying to let the model learn this.
+	\item \textbf{Correction for known temporal adjustments.} If data is affected by e.g. the population or inflation adjust it in order to account for these effects on the training data level instead of trying to learn these effects. E.g. consider quantities per capita (population) or use inflation corrected data (financial times series).
+	\item \textbf{Fourier transformation.} Include the dominant Fourier contributions in order to help the model dealing with periodicity. In practice these components my be found by an FFT and sometimes only the corresponding basis functions are included.
+	\item \textbf{Box-Cox transformation} on target values \cite{hyndman_forecasting_principles_2018}, 
+	\begin{align}
+	y_t \mapsto 
+	\begin{cases}
+	 \ln y_t & \text{if } \lambda = 0\\ 
+	 (y_t^\lambda - 1) /  \lambda & \text{otherwise.}
+	\end{cases}	
+	\end{align}
+	This transformation aims to render the seasonal effects to be about the same across the whole time series, which dictates the choice of $\lambda$. In practice forecasting results (mean point estimates) are relatively insensitive to $\lambda$ in contrast prediction intervals Once a prediction has been made on the transformed space it needs to be back-transformed into the original scale. The inverse transformation
+	\begin{align} \label{eq:inv_box_cox}
+	y_t \mapsto 
+	\begin{cases}
+	e^{y_t} & \text{if } \lambda = 0\\ 
+	(\lambda y_t + 1)^ \frac{1}{\lambda} & \text{otherwise,}
+	\end{cases}	
+	\end{align}
+	is sometimes used. However, this point wise inverse of the Box-Cox transformation is \textit{not} the inverse of the underlying forecast distribution \footnote{More precisely, he back transformation (\ref{eq:inv_box_cox}) is only  correct for the median if the transformed forecast distribution is symmetric \cite{hyndman_forecasting_principles_2018}}. If only the mean as point estimate is of interest then the \textit{biased adjusted} back-transformed mean can be approximated by \cite{hyndman_blog_back_transform}, 
+	\begin{align} \label{eq:inv_box_cox}
+	y_t \mapsto 
+	\begin{cases}
+	e^{y_t}\left[1+\frac{\sigma^2}{2}\right] & \text{if } \lambda = 0\\ 
+	(\lambda y_t + 1)^ \frac{1}{\lambda} \left[1+\frac{\sigma^2(1-\lambda)}{2(\lambda y_t + 1)^ \frac{1}{2} }\right] & \text{otherwise,}
+	\end{cases}	
+	\end{align}
+	where by assumption $y_t$ is the mean on the transformed scale and  $\sigma$ the variance.
+	  
+\end{itemize}
+
+\paragraph{Baseline Methods.}
+\paragraph{Neural networks.} There are several neural network (NN) based approaches, RNN, LSTM, 1D CNN, deep NN. The basic idea behind deep NN is to translate the problem into a supervised learning problem by predicting $y_t$ with features that are the last $l$ target values $y_{t-1}, y_{t-2},\dots y_{t-l}$ 
 \paragraph{Overview of methods} 
 \begin{itemize}
 	\item Regression models
@@ -72,7 +108,6 @@ The autocorrelation function depends on $\tau$. For white noise $95\,\%$ of its 
 	\item survival analysis
 \end{itemize}
 
-\paragraph{Transformations.}
 
 
 \bibliography{papers}
