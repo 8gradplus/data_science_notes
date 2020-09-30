@@ -38,27 +38,65 @@ Time series are commonly thought as a superposition of several components
 
 Many time-series models can be classified as additive, multiplicative, or a combination of these components \cite{hyndman_forecasting_with_exponential_smoothing}. The aim to time series modelling is to capture all effects until only error (=noise) is left. More precisely if there ist still come uncaptured trend, seasonal, cylce or autocorrelation then we can be pretty sure that we can improve the model. However, this does not imply that all models that just exhibit unexplained noise perform equally.  
  
-\paragraph{Model diagnostics.}
-The autocorrelation function (ACF) is the Pearson correlation of a time dependent random variable $Y_t$ with itself shifted in time by $\tau$.
+\paragraph{Cross validation.} For time series a split in test and train data is performed along the temporal axis.
+\paragraph{Model diagnostics.} Assume that there is model that makes predictions  $\hat y_t$ at time $t$ and the corresponding observed values $y_t$ are known. Then there are several methods that help diagnosing the model: residuals, autocorrlation function, and portmonaie tests. 
+\textbf{Residuals} of a time series is the difference between predicted values $\hat y_t$ and observed values  $y_t$ at time $t$, 
 \begin{align}
-	\rho(\tau) =  \frac {\sum_{t=\tau+1} ^ T  \left(y_t - \bar y\right) \left(y_{t-\tau} - \bar y\right) }{\sum_{t=1} ^ T (y_t - \bar y)^2 }
+	e_t = y_t - \hat y_t.
 \end{align}
-The autocorrelation function depends on $\tau$. For white noise $95\,\%$ of its ($\tau$-dependent) values are within the interval $\pm2/\sqrt{T}$. Thus the  and is used to identify white noise. 
-\cite{hyndman_forecasting_principles_2018}
+For a  "good" models residuals  have \textit{zero mean}  are \textit{uncorrelated}. If the mean is not zero then the model is biased and if there is correlation then there is still some information left in the residuals that should go in the model \cite{hyndman_forecasting_principles_2018}. These criteria do not assist in choosing a model as they may hold for several models simultaneously (model selection is performed via the error on the test set). In order to ease the computation of prediction intervals (for certain models) it is also beneficial that residuals are normally distributed with constant variance. Fixing the correlation and the distributional shape of the residual is challenging whereas zero mean can be achieved by adding a constant (the mean) to the model. A Box-Cox transformation may achieve a normal constant variance distribution.
 
-\begin{definition}[Evaluation metrics]
-	Let $y_t$ be the observed time series and  $\hat y_t$ the corresponding predictions of $T$ timesteps.
+
+The \textbf{autocorrelation function (ACF).} is the Pearson correlation of a time dependent random variable $Y_t$ with itself shifted in time by $\tau$. The ACF is typically computed on the raw data (to observed lag relationships) and residuals (for model diagnostic).
+\begin{align}
+	\rho(\tau) =  \frac {\sum_{t=\tau+1} ^ T  \left(y_t - \bar y\right) \left(y_{t-\tau} - \bar y\right) }{\sum_{t=1} ^ T (y_t - \bar y)^2 },
+\end{align}
+where $\bar y$ is the (empirical) mean. The autocorrelation function depends on $\tau$. For white noise $95\,\%$ of its ($\tau$-dependent) values are within the interval $\pm2/\sqrt{T}$. Thus the  and is used to identify white noise \cite{hyndman_forecasting_principles_2018}. 
+
+\textbf{Portmonaie tests for ACF} perform  hypothesis tests for the ACF as a point wise analysis of $\rho(\tau)$ for each $\tau$ could yield false positives (claiming erroneous autocorrelation). The \textbf{Box-Pierce test} is based on the statistics
+\begin{align}
+	Q = T \sum _{\tau=1}^\ell\rho_\tau^2
+\end{align}
+for fixed $\ell$. In practice, the choice $\ell=10$ for non-seasonal data and $\ell=2p$ where $p$ is the period of seasonality is common. For large $\ell$ (compared to $T$) the test deteriorates, which suggests the rule of thumb $\ell=\min(10, T/5)$ ($\ell=\min(2p, T/5)$) for non-seasonal (seasonal) data \cite{hyndman_forecasting_principles_2018}.
+The more accurate Ljung-Box test is based on the statistics
+\begin{align}
+Q = T (T+2) \sum _{\tau=1}^\ell\frac{\rho_\tau^2}{T-\tau}
+\end{align}
+
+For both tests, large values of $Q$ indicate that the ACF does \textit{not} come from white noise. More precisely, if the autocorrelations are from white noise then $Q$ would have a $\chi^2$ distribution with $\ell - K$ degrees of freedom, where $K$ is the number of parameters in the model (so, if $Q$ is is calculated on the raw data rather than the residuals $K=0$). 
+\paragraph{Loss functions and errors}
+\begin{definition}[Loss functions]
+	Let $y_t$ be the observed time series and  $\hat y_t$ the corresponding predictions at timestep $t$  of $T$ timesteps.
 	\begin{itemize}
-		\item Mean absolute error:  $\frac{1}{T}\sum_{t=1}^T \left | y_t - \hat y_t\right |$
+		\item Absolute loss
+		\item Squared loss
+		\item Huber loss
+		\begin{align} 
+		\begin{cases}
+		\frac{1}{2}(y_t-\hat y_t)^2 &  \text{if} \left | y_t - \hat y_t\right | \leq \delta, \\
+		\delta \left | y_t - \hat y_t\right |  - \frac{1}{2} \delta^2& \text{otherwise.}
+		\end{cases}	
+		\end{align}
+		\item $\rho$-risk metric (quantile loss) \cite{amazon_bayesian_2016}
+	\end{itemize}
+	
+\end{definition}
+
+\begin{definition}[Forecast errors]
+Let $y_t$ be the observed time series and  $\hat y_t$ the corresponding predictions at timestep $t$  of $T$ timesteps.
+	\begin{itemize}
+		\item Mean absolute error (MAE):  $\frac{1}{T}\sum_{t=1}^T \left | y_t - \hat y_t\right |$
 		  \item Mean squared error: $\frac{1}{T}\sum_{t=1}^T \left ( y_t - \hat y_t\right ) ^2$. 
-		  \item Root mean squared error:  $\sqrt{\frac{1}{T}\sum_{t=1}^T \left ( y_t - \hat y_t\right ) ^2}$
-		  \item Mean absolute percentage error
-		  \item Symmetric mean absolute percentage error
-		  \item Huber loss: 
-		  \item $\rho$-risk metric:
-		  
+		  \item Root mean squared error (RMSE):  $\sqrt{\frac{1}{T}\sum_{t=1}^T \left ( y_t - \hat y_t\right ) ^2}$
+		  %\item Mean absolute percentage error: $100\times \frac{1}{T}\sum_{t=1}^T \left | \frac{y_t - \hat y_t}{y_t}  \right |$
+		  %\item Symmetric mean absolute percentage error: $200\times \frac{1}{T}\sum_{t=1}^T  \frac{\left |y_t - \hat y_t\right |}{y_t + \hat y_t}$
 	\end{itemize}
 \end{definition}
+A forecast method that minimizes the MAE (RMSE) will lead to forecasts of the median (expectation value) of the underlying forecast density. Thus, the RMSE is widely used although the MAE is easier to interpret. Both, the MAE and RMSE dependent on the physical units. 
+
+In order to compare algorithms among various problems unit independent measures are needed. However this is a delicate task and quantities such as the the  (symmetrized) mean abolute percentage error may diverge. Rather, errors scaled by a simple forecast method are more appropriate \cite{hyndman_forecasting_principles_2018, Hyndman06anotherlook}. 
+
+
 
 
 \paragraph{Transformations.}
@@ -82,7 +120,7 @@ The autocorrelation function depends on $\tau$. For white noise $95\,\%$ of its 
 	(\lambda y_t + 1)^ \frac{1}{\lambda} & \text{otherwise,}
 	\end{cases}	
 	\end{align}
-	is sometimes used. However, this point wise inverse of the Box-Cox transformation is \textit{not} the inverse of the underlying forecast distribution \footnote{More precisely, he back transformation (\ref{eq:inv_box_cox}) is only  correct for the median if the transformed forecast distribution is symmetric \cite{hyndman_forecasting_principles_2018}}. If only the mean as point estimate is of interest then the \textit{biased adjusted} back-transformed mean can be approximated by \cite{hyndman_blog_back_transform}, 
+	is sometimes used. However, this point wise inverse of the Box-Cox transformation is \textit{not} the inverse of the underlying forecast distribution \footnote{More precisely, the back transformation (\ref{eq:inv_box_cox}) is only  correct for the median if the transformed forecast distribution is symmetric \cite{hyndman_forecasting_principles_2018}}. If only the mean as point estimate is of interest then the \textit{biased adjusted} back-transformed mean can be approximated by \cite{hyndman_blog_back_transform}, 
 	\begin{align} \label{eq:inv_box_cox}
 	y_t \mapsto 
 	\begin{cases}
@@ -94,7 +132,28 @@ The autocorrelation function depends on $\tau$. For white noise $95\,\%$ of its 
 	  
 \end{itemize}
 
-\paragraph{Baseline Methods.}
+\paragraph{Baseline Methods \cite{hyndman_forecasting_principles_2018}.}
+Let $\{y_1, \dots, y_T\}$ be historic data. The aim is to predict a future value $y_{T+h | T}$ based on the historic data.
+\begin{itemize}
+	\item \textbf{Average method:} forecasts future values as mean of historical data, 
+	\begin{align}
+		\hat y_{T+h | T} = \frac{1}{T}\sum_{t=1} ^T y_t.
+	\end{align}
+	\item \textbf{Na\"ive method:} forecasts future value as last observed value, 
+	\begin{align}
+		\hat y_{T+h | T} = y_T.
+	\end{align}
+	\item \textbf{Seasonal na\"ive method:} forecasts last observed value of the same season, 
+	\begin{align}
+		\hat y_{T+h | T} =y_{T+h-np},
+	\end{align}
+	 where $p$ is the seasonal period and  $n = \left \lfloor{\frac{h-1}{p}}\right \rfloor + 1$. 
+	\item \textbf{Drift method:} adds to na\"ive method an overall gradient,   
+	\begin{align}
+		\hat y_{T+h | T} = y_{T} +  \frac{h}{T-1} \sum_{t=2}^{T} \left(y_t - y_{t-1}\right) = y_{T} +  \frac{h}{T-1}  \left(y_T - y_1\right).
+	\end{align}
+\end{itemize}
+The average and na\"ive methods give constant predictions.
 \paragraph{Neural networks.} There are several neural network (NN) based approaches, RNN, LSTM, 1D CNN, deep NN. The basic idea behind deep NN is to translate the problem into a supervised learning problem by predicting $y_t$ with features that are the last $l$ target values $y_{t-1}, y_{t-2},\dots y_{t-l}$ 
 \paragraph{Overview of methods} 
 \begin{itemize}
