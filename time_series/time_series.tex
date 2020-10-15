@@ -40,7 +40,7 @@ Many time-series models can be classified as additive, multiplicative, or a comb
  
 \paragraph{Cross validation.} For time series a split in test and train data is performed along the temporal axis. Observations in the past --on which the model is trained -- are called train set and observations in the futures --for which the accuracy is determined --  are called test set. 
 
-A more sophisticated split of data is called cross validation. In this approach there is a series of train/test sets. Each of which contains only one observation $y_l$ in the test set and the training set is the are the observations \textit{prior} to this observation with an offset ("step") $s$ ${y_1, \dots, y_{l-s}}$.	The forecast accuracy is then measured by averaging over the test sets. This is also called \textit{evaluation on a rolling foracast origin}. $s=1$ is called 1-step-forecast. In practice the accuracy as a function of $s$ is investigated.
+A more sophisticated split of data is called cross validation. In this approach there is a series of train/test sets. Each of which contains only one observation $y_l$ in the test set and the training set  are the observations \textit{prior} to this observation with an offset ("step") $s$ ${y_1, \dots, y_{l-s}}$. For fixed $s$, $l$ induces a series of test/train sets.The forecast accuracy is then measured by averaging over the test sets. This is also called \textit{evaluation on a rolling foracast origin}. $s=1$ is called 1-step-forecast. In practice the accuracy as a function of $s$ is investigated.
 
 \paragraph{Model diagnostics.} Assume that there is model that makes predictions  $\hat y_t$ at time $t$ and the corresponding observed values $y_t$ are known. Then there are several methods that help diagnosing the model: residuals, autocorrlation function, and portmonaie tests. 
 \textbf{Residuals} of a time series is the difference between predicted values $\hat y_t$ and observed values  $y_t$ at time $t$, 
@@ -135,28 +135,50 @@ In order to compare algorithms among various problems unit independent measures 
 	  
 \end{itemize}
 
+
+\paragraph{Prediction intervals}
+Prediction intervals are given by the forecast distribution, in particular its standard deviation. However these are for most models not available and one uses the residual distribution instead. In fact, if the model is parameter-free, then the standard deviations of the model forecast distribution and the residual distribution are identical. If the model has parameters they would increase the standard deviation (due to uncertainty on the model parameters), which is often ignored. 
+
+Further assuming that the residuals are \textbf{normally distributed} with constant variance the 95\,\% one step prediction interval is a approximated by $\hat y_ {T+1 | T} \pm 1.95\,\hat \sigma$. Here 1.95 is the 95\,\%-width of the standard normal distribution.
+
+This can be generalized to multi step prediction interval $h > 1$,   
+\begin{align}\label{eq:gauss_prediction_error}
+\hat y_ {T+h | T} \pm c\hat \sigma_h, 
+\end{align}
+where $\hat \sigma_h$ is the (model dependent) standard deviation at step $h$ and $c$ is the width of the standard normal distribution for a given prediction interval (e.g., $c=1.95$ for the 95\,\% prediction interval).
+
+If no analytical standard deviations are available then prediction intervals may be obtained from \textbf{bootstrapped residuals}.
+
+
 \paragraph{Baseline Methods \cite{hyndman_forecasting_principles_2018}.}
-Let $\{y_1, \dots, y_T\}$ be historic data. The aim is to predict a future value $y_{T+h | T}$ based on the historic data.
+Let $\{y_1, \dots, y_T\}$ be historic data. The aim is to predict a future value $y_{T+h | T}$ based on the historic data. For these models also estimates for the standard deviations $\hat\sigma_h$ are available, which can be used to estimate prediction intervals according to eq. (\ref{eq:gauss_prediction_error}).
 \begin{itemize}
 	\item \textbf{Average method:} forecasts future values as mean of historical data, 
 	\begin{align}
-		\hat y_{T+h | T} = \frac{1}{T}\sum_{t=1} ^T y_t.
+	\hat y_{T+h | T} &= \frac{1}{T}\sum_{t=1} ^T y_t \\ 
+	\hat \sigma_h &= \hat \sigma \sqrt{1+\frac{1}{T}}. 
 	\end{align}
 	\item \textbf{Na\"ive method:} forecasts future value as last observed value, 
 	\begin{align}
-		\hat y_{T+h | T} = y_T.
+	\hat y_{T+h | T} &= y_T \\
+	\hat \sigma_h &= \hat \sigma \sqrt{h}. 
 	\end{align}
 	\item \textbf{Seasonal na\"ive method:} forecasts last observed value of the same season, 
 	\begin{align}
-		\hat y_{T+h | T} =y_{T+h-np},
+	\hat y_{T+h | T} &=y_{T+h-np}, \\
+	\hat \sigma_h &= \hat \sigma \sqrt{n}, 
 	\end{align}
-	 where $p$ is the seasonal period and  $n = \left \lfloor{\frac{h-1}{p}}\right \rfloor + 1$. 
+	where $p$ is the seasonal period and  $n = \left \lfloor{\frac{h-1}{p}}\right \rfloor + 1$. 
 	\item \textbf{Drift method:} adds to na\"ive method an overall gradient,   
 	\begin{align}
-		\hat y_{T+h | T} = y_{T} +  \frac{h}{T-1} \sum_{t=2}^{T} \left(y_t - y_{t-1}\right) = y_{T} +  \frac{h}{T-1}  \left(y_T - y_1\right).
+	\hat y_{T+h | T} &= y_{T} +  \frac{h}{T-1} \sum_{t=2}^{T} \left(y_t - y_{t-1}\right) \\ &= y_{T} +  \frac{h}{T-1}  \left(y_T - y_1\right), \\
+	\hat \sigma_h &= \hat \sigma \sqrt{h\left(1 + \frac{h}{T}\right)}
 	\end{align}
 \end{itemize}
-The average and na\"ive methods give constant predictions.
+In the estimates for the $h-$step standard deviations the quantity $\hat \sigma$ is the empirical standard deviation of the residuals.  The average and na\"ive methods give constant predictions. 
+
+
+
 \paragraph{Neural networks.} There are several neural network (NN) based approaches, RNN, LSTM, 1D CNN, deep NN. The basic idea behind deep NN is to translate the problem into a supervised learning problem by predicting $y_t$ with features that are the last $l$ target values $y_{t-1}, y_{t-2},\dots y_{t-l}$ 
 \paragraph{Overview of methods} 
 \begin{itemize}
@@ -168,6 +190,14 @@ The average and na\"ive methods give constant predictions.
 	\item Vector autoregression
 	\item Neural networks
 	\item survival analysis
+\end{itemize}
+
+\paragraph{Comments}
+\begin{itemize}
+	\item Temporal cutoffs (e.g. returns are allowed only for 30 days)
+	\item How many data points for the prediction of returns (data from yesterday are not relevant for returns for today). $\leftarrow$ evaluation on rolling forecast origin (?)
+	\item What shall we do with new products? Consider cohorts maybe.
+	
 \end{itemize}
 
 
