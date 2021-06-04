@@ -232,7 +232,7 @@ where $w^{[l]}, b^{[l]}$ are the weights of layer $l$, $\lVert w \rVert _F$ is t
 
 \textit{Remark:} With dropout the cost function $J$ is no longer well defined. So the convergence behaviour of $J$ as monotonically decreasing function during iteration is lost.
 
-\paragraph{Data augmentation.} Reduces the variance by artificially creating more data via e.g., random rotations, distortions, flips, crops of images. This approach does \textit{not} introduce new hyperparameters.
+\paragraph{Data augmentation.} Reduces the variance by artificially creating more data via e.g., random rotations, distortions, flips, crops of images. This approach does \textit{not} introduce new hyper parameters.
 
 \paragraph{Early stopping.} This approach tries to reduce over fitting by "tweaking"  the optimization step. Instead of ensuring, that the cost function w.r.t to the training data is minimized, additionally the cost function or error w.r.t the development set is monitored (optimization is still performed with the training set). One then stops at the optimization step where the cost function of the development data is minimized. This approach roots in the observation, that typically the development set error decreases with increasing optimization steps but then starts to increase again. This approach does \textit{not} introduce new hyperparameters.
 
@@ -360,6 +360,181 @@ The extreme case of mini-batch size one is called \textbf{stochastic gradient de
 \section{Convolutional neural networks}
 Convolutional neural networks come from computer vision (image classification, object detection, neural style transfer, ...). If a forward deep neural network was used for such tasks it would yield a very high dimensional input space and thus parameter space. As a consequence, there would not be enough data to prevent overfitting\footnote{For example a $1000\times 1000$ pixel input image with 1000 units in the first hidden layer would lead to a $3\cdot10^6 \times 1000$ dimensional weight matrix just for the first hidden layer (the factor of 3 comes from the 3 RGB channels).}.  
 
+\section{Sequence Models}
+Sequence models are largely motivated from natural language processing but also find application in time series modeling \cite{DBLP:journals/corr/FlunkertSG17, lim2020time, NEURIPS2018_5cf68969, wang2019deep, lim2020recurrent}.
+
+Recurrent neural nets suffer from vanishing / exploding gradient problem. Furthermore they are not easily capable of considering events in the long past.  Eventually they suffer from big memory requirement and need long training. One reason is that they use the last hidden state in the encoder step. Gated recurrent units (GRU) ans long-short-term-memory (LSTM) try to incorporate more information from the past by a more sophisticated activation unit. However, NLP tasks still suffer from the last hidden state approach in the encoder step. One could heuristically incorporate more hidden encoder states and pass them into the decoder. 
+
+A more sound approach is the  attention mechanism\cite{bahdanau2016neural, luong2015effective}, which weights the hidden states and passes them into the decoder. Incorporating the attention mechanism also in the encoder step is called self-attention. This leads to the concept of transformers \cite{vaswani2017attention, illustratedtransformer} and state of the art  NLP models like BERT \cite{DBLP:journals/corr/abs-1810-04805}  or GPT2 \cite{radford2019language, illustratedgpt2}.
+
+\subsection{Recurrent Neural Networks (RNN)}
+In contrast to feed forward neural networks RNNs are \textit{in principle} capable of looking at the whole time sequence. The basic idea is that, RNN cells contain an internal memory state $h_t \in \mathbb R^{d_h}$  which acts as a compact summary of past information. At each time step the memory state is updated with new observations \cite{salehinejad2018recent, lim2020time}.
+Furthermore,  RNNs are related to Bayesian filtering in discrete state Markov models \cite{lim2020recurrent, barber}.  
+\begin{figure}
+	\input{rnn}
+	\caption{Illustration of a RNN. The right hand side shows  the time unfolded structure, which explicitly depends on time.}
+	\label{fig:rnn}
+\end{figure}
+
+Assume that we have temporarily ordered features $\{x_t\}$ and labels $\{y_t\}$, with  $x_t \in \mathbb R^{d_x}$ and $y_t \in \mathbb R^{d_y}$. There are many formulations of RNNs. One of the simplest RNNs, the Eilman RNN, takes as internal memory state $h_t$ the expression \cite{ELMAN1990179, Goodfellow:2016:DL} 
+\begin{align}
+	h_t &= \gamma_h\left(W_{h_1} h_{t-1} + W_{h_2} x_t + b_h\right) \\
+	y_t &= \gamma_y\left(W_y h_t + b_y\right),
+\end{align} 
+where $W_{h_1} \in \mathbb R^{d_h \times d_h} ,W_{h_2} \in \mathbb R^{d_h \times d_x}, b_h \in  \mathbb R^{d_h}$ and  $W_y \in \mathbb R^{d_y \times d_h}, b_y \in \mathbb R^{d_y} $. Training corresponds to learning these weights. Together with their usual demand for initialization the initial state is taken as $h_0=0$.
+$\gamma_h$ and $\gamma_y$ are activation functions (a common choics is $\gamma_h(\cdot) = \operatorname{thanh} (\cdot)$ and $\gamma_y(\cdot) = \operatorname{softmax} (\cdot)$ for classification). The \textbf{advantages }of  RNN are 
+\begin{itemize}
+	\item They can process input sequences of any length. As a consequnce  RNNs do not require the explicit specification of a lookback window.
+	\item The model size is invariant with respect to input size.
+	\item The computation for step $t$ in principle uses information from many steps back.
+\end{itemize} 
+The \textbf{disadvantage} are
+\begin{itemize}
+	\item Slow computation.
+	\item  Very limited temporal memory in practice \cite{bengio_long_term_rnn_1994, 2001_kolen_gradien_flow_rnn}, which is implied by the exploding and vanishing gradient problem. \cite{Goodfellow:2016:DL}.    One can show that the matrix norm of the partial derivatives necessary for back propagation is  of the form $\lVert \partial h_t / \partial h_k \rVert \leq \beta_1 \beta_2 ^ {t-k}$, which can easily explode or vanish for large time differences $t-k$.
+\end{itemize}
+There are several RNN \textbf{design patterns}, 
+\begin{itemize}
+	\item RNN that produce at time step an output and have recurrent connections between hidden units. (E.g., decoder part in sequene to sequence models)
+	\item RNN that have recurrent connections between hidden units and only produce an output at the final time step. (E.g., encoder part in sequene to sequence models)
+	\item \textit{Bi-directional} RNN that use future information for predictions. This can be usesful in NLP tasks. The construction of bi-directional essentially doubles the number of weights and ist straight forward. It constructs forward and backward memory cells and then concatinates them. For the Eilmann RNN e.g., this yields
+	\begin{align}
+		 \overrightarrow{h}_t &= \gamma_h\left(\overrightarrow{W}_{h_1} \overrightarrow{h}_{t-1} + \overrightarrow{W}_{h_2} x_t + \overrightarrow{b}_h\right) \\
+		 \overleftarrow{h}_t &= \gamma_h\left(\overleftarrow{W}_{h_1} \overleftarrow{h}_{t-1} + \overleftarrow{W}_{h_2} x_t + \overleftarrow{b}_h\right) \\
+		 h_t  & = \overrightarrow{h}_t \oplus  \overleftarrow{h}_t \\
+		y_t &= \gamma_y\left(W_y h_t + b_y\right),
+	\end{align}
+where $\oplus$ is the direct sum (i.e., concatinate vectors).
+\end{itemize}
+
+\paragraph{Long-Short-Term Memory (LSTM)}
+LSTMs \cite{lstm, 	schmidhuber_1999_learning_to_forget} try to overcome the limitations in learning long-range dependencies in the data by improving "gradient flow" within the network \cite{Sherstinsky_2020}. This is achieved by a more complex memory state. LSTMs introduce an additional cell state $c_t$,  which stores long-term information with additional temporal modulations conducted by so called gates, 
+\begin{align}
+	\textit{Input gate:}&  \quad i_t = \sigma \left( 
+	 W_{i_1} h_{t-1} + W_{i_2} x_{t} + b_i
+	 \right)\\ 
+	\textit{Output gate:}& \quad  o_t = \sigma \left( 
+	W_{o_1} h_{t-1} + W_{o_2} x_{t} + b_o
+	\right)\\ 
+	\textit{Forget gate:}& \quad  f_t = \sigma \left(
+	W_{f_1} h_{t-1} + W_{f_2} x_{t} + b_f
+	 \right), 
+\end{align}
+where  $W_{i_1}, W_{o_1}, W_{f_1} \in \mathbb{R} ^ {d_h \times d_h}$,  $W_{i_2}, W_{o_2}, W_{f_2} \in \mathbb{R} ^ {d_h \times d_x}$, and $b_i, b_o, b_f \in \mathbb{R}^{d_h}$. $h_t$ is called hidden state and  $\sigma (\cdot)$ is the sigmoid activation function. The gates modify hidden state $h_t$ and cell state $c_t$ at time $t$ according to  
+\begin{align}
+	 \textit{Cell state}& \quad  c_t = 
+	 f_t \odot c_{t-1} + i_t \odot \left (W_{c_1} h_{t-1} + W_{c_2} x_t + b_c  \right) \\
+	 \textit{hidden state:}& \quad  h_t = 
+	 o_t \odot \tanh(c_{t}), 	 
+\end{align}
+where $W_{c_1} \in \mathbb{R}^{d_h \times d_h}, W_{c_2} \mathbb{R}^{d_h \times d_x}, b_c \in \mathbb{R}^{d_h}$, and  $\odot$ is the component wise (Hademard) product. The initial states are set to $h_0=c_0=0$.
+As with simple RNNs there are many kinds of LSTMs \cite{Greff_2017}, in particular peephole LSTMs \cite{Gers_2001, gers2002learning} and peephole convolutional LSTMs \cite{shi2015convolutional}.
+
+\subsection{Attention mechanism}
+The attention mechanism \cite{bahdanau_2016_attention, cho_2014_attention, luong_2015_attention}. Assume a sequence $\{x_1, \dots, x_T\}$ with $x_i \in \mathbb R ^{d_x}$. Then the attention mechanism is of the form
+\begin{align}
+	x_t' &= \sum_i f(x_i) \, \lambda_{it} \label{eq:attention_context}\\ 
+	\lambda_{it} &= \lambda(x_i, x_t) =  \text{softmax}\, g(x_i, x_t) \label{eq:attention},
+\end{align}
+where  $f$ and $g$ are potentially trainable functions. Different choices for them yield different attention mechanisms. The transformed $x_t'\in \mathbb R ^{d_h}$ is sometimes called context vector or attention. It is common to parametrize the weights $\lambda_{it}$ with the softmax function (\ref{eq:attention}), \footnote{$\text{softmax}\, g(x_i, x_t) = \frac {e^{g(x_i, x_t)} }{\sum_i e^{g(x_i, x_t)}}$}  and call $g$ similarity function. 
+\paragraph{Hard vs. soft attention}
+The softmax parametrization enables a probabilistic interpretation of the weights $\lambda_{it} = p(i | t)$ with respect to $i$ for a given $t$. The most common approach to obtain a attention function is given in (\ref{eq:attention_context}) as a weighted linear combination over vectors $f(x_i)$. This approach is called \textit{soft attention} and can be directly incorporated with back propagation.
+
+However, one could also sample an $\ell$ of the  $\lambda$-distribution $p(i | t)$  and then use $x_t' = f(x_\ell)$ as attention function instead of averaging (\ref{eq:attention_context}). This approach is called \textit{hard attention} and thus  pays attention only to a specific part of the sequence (for example think of $x_\ell$ as a glimpse of a figure). Hard attention is harder to train as back propagation is not feasible and one has to resort to methods from reinforcement learning.
+ 
+\paragraph{Self Attention}
+Self attention computes a transformed $x_t'$ with respect to every element in the sequence $\{x_1, \dots, x_T\}$ - in particular there is also a contribution to (\ref{eq:attention_context}) from $x_t$ it\textit{self}.
+Specifically  \cite{vaswani2017attention} parametrizes the  functions $f$ and $g$ with three matrices $W_q,W_k,W_v$, with $W_v \in \mathbb{R}^{d_h \times d_x}$ and $W_q, W_k \in \mathbb{R}^{d_s \times d_x}$. Now, define 
+\begin{align}
+ q_t := W_q x_t, \quad
+ k_i := W_k x_i,  \quad
+ v_i :=  W_v x_i,  
+ \end{align}
+ and identify the functions $f$ and $g$ in  (\ref{eq:attention_context}) - (\ref{eq:attention}) with
+ \begin{align}
+f(x_i) &:= v_i \\ 
+g(x_i, x_t) &:= \frac{k_i ^T q_t}{\sqrt{d_s}} =  \frac{q_t^T  k_i}{\sqrt{d_s}}, 
+\end{align}
+gives as attention $x'_t = \sum_i v_i \lambda _{it} $
+with $\lambda _{it}  = \text{softmax}(q_t^T  k_i/\sqrt{d_s})$. The vectors $v_i  \in \mathbb R^{d_h} $, $q_i\in \mathbb R^{d_s} $ and $k_i \in \mathbb R^{d_s} $ are called value, query and key in analogy with database retrieval systems. 
+
+So for a fixed point in time $t$ the weights are essentially obtained by a scaled dot product of the query vector $q_t$ at $t$ with the key vectors \textit{at all times}  $k_i, i \in \{1, \dots, T\}$ (including $t$ itself). The attention is then the weighted sum over the value vectors $v_i$. 
+
+The formulation can be readily extended to all points in time. Define the matrices 
+\begin{align}
+X &:=[x_1,\dots, x_T] \in \mathbb{R}^{d_x\times T}\\
+Q &:= W_q X \in \mathbb{R} ^ {d_s \times T}, \\ 
+K &:= W_k X \in \mathbb{R} ^ {d_s \times T},\\ 
+V &:= W_vX\in \mathbb{R} ^ {d_h \times T},
+\end{align}
+which gives
+\begin{align}
+	 X' =:\mathcal A (Q, K, V)  = V \lambda, \quad \lambda = \text{softmax}\left(\frac{Q^T K}{\sqrt d_s} \right),
+\end{align}
+where the softmax function is component wise and the normalization w.r.t to rows. This formulation computes the attention for all times simultaneously ($X':=[x'_1,\dots, x'_T]  \in \mathbb{R}^{d_h\times T}$). Note that in practice rather a dual (i.e., transposed) formulation is used as it is more compatible with sequence conventions (time as leading index).  Either way, \textbf{training corresponds to computing the matrices $W_q,W_k,W_v$} via back propagation.
+
+\paragraph{Multi-head attention}
+The idea is to perform self attention in parallel on different subspaces for increased performance. Each individual attention computation within this approach is called \textit{head}. 
+
+Specifically for each  $h$ (\textit{head}) in $1, \dots H$ introduce "projection" - Matrices ${P_{h,q}, P_{h,k},  P_{h,v}}$, where $P_{h,q}, P_{h,k} \in \mathbb{R}^{d_{s'} \times d_s}$ and $P_{h,v} \in \mathbb{R}^{d_{h'} \times d_h}$. Now define
+
+\begin{align}
+Q_h &= P_{h,q} W_q X = W_{h,q}  X \in \mathbb{R} ^ {d_{s'} \times T}, \\ 
+K_h &= P_{h,k} W_k X = W_{h,k}  X \in \mathbb{R} ^ {d_{s'}  \times T},\\ 
+V_h &= P_{h,v} W_vX  = W_{h,v}  X \in \mathbb{R} ^ {d_{h'}  \times T},
+\end{align}
+and compute the matrix multiplications, which yield effective weight matrices $W_{h,q}, W_{h,k} \in \mathbb{R} ^ {d_{s'} \times d_x}$ and $W_{h,q} \in \mathbb{R} ^ {d_{h'} \times d_x}$.      
+The multi-head attention is then the direct sum\footnote{The direct sum is with respect to columns $\mathcal A(Q_i, K_i, V_i)\oplus \mathcal A(Q_j, K_j, V_j) \in \mathbb{R} ^ {2d_{h'}  \times T }$} of the individual attentions together with an additional matrix multiplication by a matrix $W$, 
+\begin{align}
+	 X' = W\oplus_{h=1}^H \mathcal A(Q_h, K_h, V_h),
+\end{align}
+where $X' \in \mathbb{R} ^ {H d_{h'}  \times T}$ and $W \in \mathbb{R} ^ {H d_{h'}  \times H d_{h'}}$.
+Training corresponds to learning the 3$H$ matrices $\{W_{h,q}, W_{h,k}, W_{h,v}\}$ and the matrix $W$ via back propagation.
+
+\paragraph{Dual formulation} While the the above formulations seem natural if the weight matrices are thought of linear operators in the it is common to use the dual formulation (because conventionally the time index is the first index). This can be achieved by transposing the design matrix $X$ all subsequent expressions and then rename the Matrices. 
+So consider matrices of the form $W_v \in \mathbb{R}^{d_x \times d_h}$ and $W_q, W_k \in \mathbb{R}^{d_x \times d_s}$.  Then, in the matrix formulation the attention is given by
+\begin{align}
+X &:=[x_1,\dots, x_T]^T \in \mathbb{R}^{T\times d_x}\\
+Q &:= X W_q \in \mathbb{R} ^ {T \times d_s}, \\ 
+K &:= X W_k \in \mathbb{R} ^ {T \times d_s},\\ 
+V &:= X W_v \in \mathbb{R} ^ {T \times d_h}, \\ 
+X'&=:\mathcal A (Q, K, V)  =  \text{softmax}\left(\frac{Q K^T}{\sqrt d_s} \right) V,
+\end{align}
+where $\mathcal A (Q, K, V)\in \mathbb{R} ^ {T \times d_h}$ and the element-wise softmax is now normalized with respect to columns. For the multi-head attention choose matrices $P_{h,q}, P_{h,k} \in \mathbb{R}^{d_s \times d_{s'} }$ and $P_{h,v} \in \mathbb{R}^{d_h \times d_{h'} }$ and 
+\begin{align}
+Q_h &= X W_q  P_{h,q}  = X W_{h,q}   \in \mathbb{R} ^ {T \times d_{s'}}, \\ 
+K_h &= X W_k  P_{h,k}  = X W_{h,k} \in \mathbb{R} ^ {T \times d_{s'}},\\ 
+V_h &= X W_v P_{h,v}  = X W_{h,v}  \in \mathbb{R} ^ {T\times d_{h'}}, \\
+X' &= \oplus_{h=1}^H \mathcal A(Q_h, K_h, V_h) W,
+\end{align}
+where the direct sum is now with respect to  columns.
+
+
+
+\paragraph{Causal attention}
+So far there was no notion auf causality. For a given point in time $t$ the attention ranges over the whole time period and thus also w.r.t to future events. In order to introduce temporal causality contributions from future events should vanish in (\ref{eq:attention_context}): $\lambda _{it} = 0$ for $i > t$. In the parametrization of self attention this can be achieved by masking
+\begin{align}
+\mathcal A (Q, K, V)  =  \text{softmax}\left(\frac{Q K^T}{\sqrt d_s} + M\right) V,	
+\end{align}
+where $M$ is $-\infty$ in the upper triangular and 0 elsewhere.
+
+
+
+\subsection{Sequence to sequence models and transformers}
+The problem with RNNs are i) long range dependencies ii) vanishing and exploding gradients, iii) large number of training steps and iv) the recurrence prevents from parallel training. \textit{All} of these problems are improved by transformer networks. 
+Transformers are entirely based on attention. They just look at contextual similarity and thus inherently neglect temporal ordering. Therefore the temporal ordering (positions) is incorporated by adding positional encoding to the input features.
+
+
+\begin{itemize}
+	 \item compare methods: https://jalammar.github.io/illustrated-bert/
+	 \item http://jalammar.github.io/illustrated-word2vec/
+	 \item https://www.youtube.com/watch?v=5vcj8kSwBCY
+%	 \item implementation of attention layer https://github.com/tensorflow/models/blob/master/official/nlp/transformer/attention_layer.py
+%	 \item https://www.youtube.com/watch?v=8zAP2qWAsKg&list=RDCMUCP7jMXSY2xbc3KCAE0MHQ-A&start_radio=1&rv=8zAP2qWAsKg&t=5337
+%	 \item https://www.youtube.com/watch?v=8zAP2qWAsKg&t=2410s
+%	 \item implementation: https://colab.research.google.com/github/tensorflow/docs/blob/master/site/en/tutorials/text/nmt_with_attention.ipynb#scrollTo=nZ2rI24i3jFg
+	 
+\end{itemize}
 
 
 \section{Outlook}
@@ -368,7 +543,7 @@ Convolutional neural networks come from computer vision (image classification, o
 \item Interpretation of NN \cite{2017arXiv170607979M, KinSchAlbMueErhKimDae18}
 \item (Denoising) autoencoder 
 \item Adversarial nets (generative vs. discriminative)
-\item Recurrent neural networks (e.g., Hopfield networks)
+\item Hopfield networks \cite{ramsauer2020hopfield}
 \item Convolution neural networks 
 \item Hyper parameter tunining using Gaussian processes
 \item eg VGG http://www.robots.ox.ac.uk/~vgg/practicals/cnn/index.html
