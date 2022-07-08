@@ -358,7 +358,92 @@ The extreme case of mini-batch size one is called \textbf{stochastic gradient de
 
 
 \section{Convolutional neural networks}
-Convolutional neural networks come from computer vision (image classification, object detection, neural style transfer, ...). If a forward deep neural network was used for such tasks it would yield a very high dimensional input space and thus parameter space. As a consequence, there would not be enough data to prevent overfitting\footnote{For example a $1000\times 1000$ pixel input image with 1000 units in the first hidden layer would lead to a $3\cdot10^6 \times 1000$ dimensional weight matrix just for the first hidden layer (the factor of 3 comes from the 3 RGB channels).}.  
+Convolutional neural networks come from computer vision (image classification, object detection, neural style transfer, ...). If a forward deep neural network was used for such tasks it would yield a very high dimensional input space and thus parameter space. As a consequence, there would not be enough data to prevent overfitting\footnote{For example a $1000\times 1000$ pixel input image with 1000 units in the first hidden layer would lead to a $3\cdot10^6 \times 1000$ dimensional weight matrix just for the first hidden layer (the factor of 3 comes from the 3 RGB channels).}. 
+
+\paragraph{Continuous case. }
+Let $f, g: \mathbb R ^n \rightarrow \mathbb C$, then 
+\begin{align}
+	(f * g)(t) &= \int f(t') g(t - t') \, dt'  \quad \text{(\textbf{convolution})}\\
+	(f \star g)(t) &= \int \overline {f(t')} g(t + t') \, dt' \quad \text{(\textbf{cross correlation})},
+\end{align}
+While these quantities look innocently similar the interpretation is different. Cross correlation is interpreted as the similarity of the functions $f$ and $g$ (shifted by $t$). As special case, the \textit{auto correlation} at lag $\tau$ is just the cross correlation with itself $R_f(\tau) = (f \star f)(\tau)$.  Convolution is interpreted as $f$ being  "smeared out" by a  $g$: $(f*g)(t)$ is the weighted "mean" of $f(t')$ by a function $g(t-t')$. The convolution satisfies the following properties:
+\begin{itemize}
+	\item Commutative $f*g = g* f$
+	\item Associative 
+	\item Distributive
+	\item Identity $f * \delta = f$. And therefore the inverse convolution (if exisits) is defined as 
+	\item Translational equivariance. $\tau_x(f*g) = (\tau_x f) * g =   f *  (\tau_x g)$, with the translation operator $(\tau_x(f))(y) = f(y-x)$ (convolution commutes with translation).
+	
+\end{itemize}
+
+Introducing the mirror operater $Pf(t) = f(-t)$ these convolution and cross correlation are related by \footnote{Because $\overline{Pf} * g = \int \overline{f(-t')} g(t - t') \, dt' = \int \overline{f(t')} g(t + t') \, dt' = f \star g $}
+\begin{align} \label{eq:relation_conv_corr_cont}
+f \star g = \overline{Pf} * g.
+\end{align}
+So, if $f$ is hermitian (symmetric for real valued functions), $\overline {f}(t) = f(-t)$, then $f \star g = f * g$. And if both, $f$ and  $g$ are hermitian then the cross correlation is commutative, $f\star g = g \star f$. Convolution and Cross correlation is translational equivariant.
+
+In practice, these quantities are often calculated using the convolution theorem. Consider the Fourier transform of a function $f \in L^1(\mathbb R ^n) $
+\begin{align}
+	 (\mathcal F f)(y) &= \frac{1}{\sqrt{2\pi}^n } \int f(x) e^{-iy\cdot x}\, dx \\
+	 (\mathcal F^{-1} \hat f)(x) &= \frac{1}{\sqrt{2\pi}^n } \int \hat f(y) e^{iy\cdot x}\, dy,
+\end{align}
+where $\mathcal F^{-1} $ is the inverse Fourier transform and $y\cdot x$ is the standard scalar product ($x, y \in \mathbb R ^n$). The \textit{convolution theorem} states that, 
+\begin{align}
+	f * g = \mathcal F^{-1} (\mathcal F f \cdot  \mathcal F g), \\
+    f \star g = \mathcal F^{-1} (\overline{\mathcal F f} \cdot  \mathcal F g).
+\end{align}
+with the pointwise product  $(f_1 \cdot f_2)(x) = f_1(x) \, f_2(x) $. The expression follows from (\ref{eq:relation_conv_corr_cont}) and $\mathcal F\{\overline{Pf}\} = \overline{\mathcal F f}$. Thus, convolution and cross correlation may be computed from (inverse) Fourier transforms.
+
+
+\paragraph{Discrete convolution.} Let $F: \mathbb{Z}^d \rightarrow \mathbb{R}$ be a discrete function. Let $\Omega_r = [-r, r]^d \cap \mathbb{Z}^d$ and $\omega: \Omega_r \rightarrow \mathbb{R}$ be a $(2r + 1)^d$ dimensional filter kernel. Then the discrete convolution operator $*$ is defined as \cite{yu2016multiscale, dumoulin2018guide}
+\begin{align}
+	(F * k)(p) = \sum_{s+t = p}F(s)\, \omega(t),
+\end{align}
+where in the context of neural networks $F$ is called input feature map and the convolution is called output feature map. The filter kernel size $(2r + 1)^d$  determines the size a given filter locally looks at the input feature map. For neural networks this is also called \textit{receptive field}.
+
+For example, in image processing  there are well known edge detection filter kernels, 
+\begin{align}
+	\left[
+	\begin{array}{rrr}
+	1 & 0 & -1 \\ 
+	0 & 0 & 0 \\
+	-1 & 0 & 1 \\ 
+	\end{array}\right],
+	\quad
+	\left[
+	\begin{array}{rrr}
+	0 & -1 & 0 \\ 
+	-1 & 4 & -1 \\
+	0 & -1 & 0 \\ 
+	\end{array}\right],	
+		\quad
+	 \left[
+	\begin{array}{rrr}
+	-1 & -1 & -1 \\ 
+	-1 & 8 & -1 \\
+	-1 & -1 & -1 \\ 
+	\end{array}\right].	
+\end{align}
+
+\paragraph{Deconvolution and transposed convolution}\cite{zeiler_deconvolution_nn_2010}
+\paragraph{Dilated and causal convolutions}\cite{yu2016multiscale, chen2016semantic}
+
+\paragraph{Convolutions in neural networks.} There are several tweaks in the application of convolutions to neural networks
+\begin{itemize}
+	\item Filters are learned by back propagation.
+	\item Activation function and bias.
+	\item Discrete correlation instead of convolution.
+	\item Several Filters in parallel (filterbanks)
+	\item Dimensions
+	\item Padding and strides
+	\item Pooling
+\end{itemize}
+
+- https://cs231n.github.io/convolutional-networks/
+
+- https://arxiv.org/pdf/1511.07122.pdf 
+- http://torch.ch/blog/2016/02/04/resnets.html
+- https://cs231n.github.io/optimization-2/
 
 \section{Sequence Models}
 Sequence models are largely motivated from natural language processing but also find application in time series modeling \cite{DBLP:journals/corr/FlunkertSG17, lim2020time, NEURIPS2018_5cf68969, wang2019deep, lim2020recurrent}.
@@ -384,7 +469,7 @@ Assume that we have temporarily ordered features $\{x_t\}$ and labels $\{y_t\}$,
 where $W_{h_1} \in \mathbb R^{d_h \times d_h} ,W_{h_2} \in \mathbb R^{d_h \times d_x}, b_h \in  \mathbb R^{d_h}$ and  $W_y \in \mathbb R^{d_y \times d_h}, b_y \in \mathbb R^{d_y} $. Training corresponds to learning these weights. Together with their usual demand for initialization the initial state is taken as $h_0=0$.
 $\gamma_h$ and $\gamma_y$ are activation functions (a common choics is $\gamma_h(\cdot) = \operatorname{thanh} (\cdot)$ and $\gamma_y(\cdot) = \operatorname{softmax} (\cdot)$ for classification). The \textbf{advantages }of  RNN are 
 \begin{itemize}
-	\item They can process input sequences of any length. As a consequnce  RNNs do not require the explicit specification of a lookback window.
+	\item They can process input sequences of any length. As a consequence  RNNs do not require the explicit specification of a lookback window.
 	\item The model size is invariant with respect to input size.
 	\item The computation for step $t$ in principle uses information from many steps back.
 \end{itemize} 
@@ -536,6 +621,42 @@ Transformers are entirely based on attention. They just look at contextual simil
 	 
 \end{itemize}
 
+\section{Normalizing Flow}
+Baysian methods allow to model uncertainties. While there are methods of its own for Bayesian modeling via a Baysian belief network there are approaches that incorporate these ideas into neural network architectures \cite{bayesion_networks_tutoral_2020}. 
+
+In principle there are two sources for uncertainty. \textbf{Epistemic uncertainty} is inherent to the model due to the likelihood function, which is of the general $p(y  | x, \theta)$ form for a supervised problem for a target random variable $Y$ given covariates $X$ and model parameters $\theta$.  \textbf{Aleotoric uncertainty} is the uncertainty on the model parameters coming from limited training data $D$, $p(\theta | D)$. 
+
+For likelihood functions, and hence epistemic uncertainty the traditional approach is to parametrize the likelihood function by some analytic pdf. In the context of neural networks these parameters are learned by a neural network with suitable activation functions in the output layer to fit the domain of definitions of these parameters. While this allows to incorporate features into the likelihood function in a non-linear fashion this may still limit the expressiveness of the model as it hinges on the particular choice of the likelihood function. In order to overcome this limitation recent attempts aim to learn the likelihood function in a parameter free fashion via normalizing flows \cite{normalizing_flows_2019, normalizing_flow_review_kobyzev_2021}, diffusion models \cite{https://doi.org/10.48550/arxiv.2006.11239}, or implicit quantile regression \cite{pmlr-v80-dabney18a}
+
+\subsection{Normalizing flows}
+
+
+\section{Time Series Neural Networks}
+Common practices for time series modelling
+\begin{itemize}
+	\item \textbf{Split time} in context and prediction times
+	\item \textbf{Scaling:} scale data over context time and rescale after prediction
+	\item \textbf{Metrics for evaluation} \textit{Continuous Ranked Probability Score} (CRPS) for probabilistic time series models
+	\item \textbf{Dequantization:} corresponds to adding noise (e.g. from a uniform distribution) for disrecte data when using models that require contineous data (eg. normalizing flow models).
+	\item \textbf{Categorical features:} use embeddings 
+\end{itemize}
+Time series can be understood as subclass of sequence models. This section summarizes explicit time series models.
+\paragraph{LSTNet.} This network \cite{lstnet_2017} aims to model long and short term patterns by combining neural net components with an autoregressive model. A prediction at time step $t$ given by
+
+\begin{align}
+	\hat y_t = y_t^{AR} + y_t^{NN},
+\end{align}
+where $y_t^{NN}$ is the  neural net component and $y_t^{AR}$ is the auto regressive component. The auto regressive part is sensitive to the scale of the inputs (which is a hard for neural networks). This significantly improves model performance. 
+
+The neural network part models modulations with respect to this baseline model. It introduces a so called recurrent skip connection by adapting the formulae of e.g. LSTM (in the paper of GRU): LSTM  uses hidden states at time $t-1$ as inputs for time $t$. The paper instead uses hidden states of time step $t-p$ as input for time step $t$. This adds a parameter $p$ (the number of hidden states skipped through) and needs to be tuned. For periodic patterns $p$ is obviously the periodicity. This method should increase the long term capacity of standard RNNs.
+\begin{align}
+ 	\text{Temporal convolution: } y_t \mapsto y'_t \\
+ 	\text{Gated recurrent network: } y'_t \mapsto y''_t \\ 
+	\text{Recurrent-skip network: } y'_t \mapsto y'''_t \\ 	
+	\text{Combination } y_t^{NN} = W^1y''_t +  \sum_{i=0}^{p-1}W^2_iy'''_{t-i} + b   
+\end{align}
+The convolution shall capture short term dependencies and serves as input for following RNN. The RNN should capture long term time dependencies and even more the recurrent skip network.  Finally both recurrent units are combined by a small dense NN. As input serve only the last hidden state at time $t$ of the RNN (context vector) and the last $p$ hidden states of the recurrent-skip network. Instead of the last two steps also the attention mechanism can be used (which also increases the long term capacity). The authors find similar accuracy within these two approaches.
+
 
 \section{Outlook}
 \begin{itemize}\setlength\itemsep{0em}
@@ -548,6 +669,26 @@ Transformers are entirely based on attention. They just look at contextual simil
 \item Hyper parameter tunining using Gaussian processes
 \item eg VGG http://www.robots.ox.ac.uk/~vgg/practicals/cnn/index.html
 \end{itemize}
+
+\appendix
+\section{Numerics}
+\paragraph{Log-sum-exponent trick.} The logarithm of sum of exponentials may suffer from numerical overflow (due to exponent) or underflow. A numerical stable equivalent is
+\begin{align} \label{log-sum-exp-trick}
+	\ln \sum_i e^{x_i}  =  \ln \sum_i e^{x_i - c} + c, \quad c = \max\{x_i\}, 
+\end{align}
+which prevents the exponent to explode (numerical overflow). This idea may be put forward compute numerical stable logarithms of matrix multiplication. 
+More generally, consider the logarithm of a Tensor contraction  
+\begin{align}
+\ln \sum_k A_{ikl} B_{ikl} &= \ln \sum_k e^{\ln A_{ikl}} e^{\ln B_{ikl}} \\
+& = \ln \sum_k \exp({\ln A_{ikl} + \ln B_{ikl}}) 
+\end{align}
+As a special case the matrix product is given by
+\begin{align}
+\ln A B_{ij} = \ln \sum_k A_{ik} B_{kj} = \ln \sum_k \exp({\ln A_{ik} + \ln B_{kj}}),  
+\end{align}
+both can be computed in a numerical stable fashion using (\ref{log-sum-exp-trick}). Furthermore the logarithm of a Matrix product can be written as a generalized sum of the individual Matrix logarithms.
+
+
 \bibliographystyle{plain}
 \bibliography{paper}
 \end{document}
