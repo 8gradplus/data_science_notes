@@ -10,6 +10,7 @@
 \newtheorem{definition}{Definition}
 \usepackage{standalone}
 \usepackage{tikz}
+\usepackage[ruled,vlined]{algorithm2e}
 \usetikzlibrary{matrix,chains,positioning,decorations.pathreplacing,arrows}
 \usetikzlibrary{positioning,calc}
 
@@ -621,14 +622,147 @@ Transformers are entirely based on attention. They just look at contextual simil
 	 
 \end{itemize}
 
-\section{Normalizing Flow}
+\section{Normalizing flows}
 Baysian methods allow to model uncertainties. While there are methods of its own for Bayesian modeling via a Baysian belief network there are approaches that incorporate these ideas into neural network architectures \cite{bayesion_networks_tutoral_2020}. 
 
 In principle there are two sources for uncertainty. \textbf{Epistemic uncertainty} is inherent to the model due to the likelihood function, which is of the general $p(y  | x, \theta)$ form for a supervised problem for a target random variable $Y$ given covariates $X$ and model parameters $\theta$.  \textbf{Aleotoric uncertainty} is the uncertainty on the model parameters coming from limited training data $D$, $p(\theta | D)$. 
 
 For likelihood functions, and hence epistemic uncertainty the traditional approach is to parametrize the likelihood function by some analytic pdf. In the context of neural networks these parameters are learned by a neural network with suitable activation functions in the output layer to fit the domain of definitions of these parameters. While this allows to incorporate features into the likelihood function in a non-linear fashion this may still limit the expressiveness of the model as it hinges on the particular choice of the likelihood function. In order to overcome this limitation recent attempts aim to learn the likelihood function in a parameter free fashion via normalizing flows \cite{normalizing_flows_2019, normalizing_flow_review_kobyzev_2021}, diffusion models \cite{https://doi.org/10.48550/arxiv.2006.11239}, or implicit quantile regression \cite{pmlr-v80-dabney18a}
 
-\subsection{Normalizing flows}
+\subsection{Transformation of random variables}
+Consider two random variables $X, Y \in \mathbb{R}^d$ with probability distributions 
+$p_X, p_Y$. Let $f$ be an \textbf{bijective }function such that $f(X) = Y$. Then the two probability distributions are linked by the change of variable formular. 
+\begin{align}
+p_Y(y) &= p_X(f^{-1}(y)) |\det Df^{-1}(y)| \label{eq:pdf_trafo} 
+\end{align}
+where $Df^{-1}(y)=\partial f^{-1} / \partial y $ is the Jacobian evaluated at point $y$. The density $p_Y$ is also sometimes called \textit{push forward} of $p_X$ by the function $f$, $f_*p_X$. So, given $f$ and $p_X$  one can compute the pdf $p_Y$. As $f$ is bijective then the inverse transformation is
+\begin{align}
+	p_X(x) = p_Y(f(x)) |\det Df(x)|. \label{eq:pdf_trafo_inv} 
+\end{align}
+
+Now we ask a more complicated question. Let there be given  two probability distributions $p_X, p_Y$ - does there exist a bijective function $f$ that transforms these distributions into each other? However, from a practical point of view the mere existence is not enough as (\ref{eq:pdf_trafo}) dictates that the inverse and the Jacobi determinant should be cheap to compute. \cite{Bogachev_2005, jaini_polynomial_flow_2019}.
+Fortunately there is theoretical support,
+\begin{definition}{(Triangular map)}
+	A map $T=(T_1, \dots, T_d): \mathbb{R}^d  \rightarrow \mathbb{R}^d $ is called triangular if $T_1$ is a function of $x_1$, $T_2$ a function of $(x_1, x_2)$, and so on: $T_i$ is a function of $(x_1,\dots, x_i)$. A triangular map is called (strictly) increasing if every component $T_i$ is (strictly) increasing with respect to the variable $x_i$ (keeping the other variables $(x_1, \dots, x_{i-1})$ fixed).
+\end{definition}
+
+\begin{theorem}{\cite{Bogachev_2005, jaini_polynomial_flow_2019}} \label{thm:bogachev}
+	For any two densities $p_X$, $p_Y$ over $X=Y=\mathbb{R}^d$ there exists a unique increasing triangular map $T: X \rightarrow Y$ such that $p_Y = T_*p_X$.
+\end{theorem}
+
+Consider some properties of triangular maps.
+First, the Jacobian of a triangular map is triangular because $\partial T_i /\partial x_j = 0 \text{ for } j > i$ and therefore the Jacobian determinant can be computed from the diagonal elements $\det DT = \prod_i \partial T_i /\partial x_i$. 
+The inverse strictly increasing triangular map is also a triangular map.
+\begin{align}
+	T^{-1} &= (T^{-1}_1, \dots, T^{-1}_d): \mathbb{R}^d  \rightarrow \mathbb{R}^d \label{eq_inv_triang}
+\end{align}
+
+Consider the  scalar map  $t_i :x_i \mapsto T_i(x_1, \dots x_i)$, for fixed $x_1, \dots x_{i-1}$. The inverse $t_i^{-1}$ exists because this map is strictly increasing. This establishes the components of $T^{-1}$
+\begin{align}
+	&T_1^{-1}(y_1) = t_1^{-1}(y_1) \nonumber \\ 
+	&T_2^{-1}(y_1,y_2) = t_2^{-1}(T_1^{-1}(y_1),y_2) \nonumber \\
+	&\dots \nonumber \\
+	&T_d^{-1}(y_1,\dots, y_d) = t_d^{-1}(T_1^{-1}(y_1), \dots, T_{d-1}^{-1}(y_1, \dots,y_{d-1} ), y_d) \label{eq:inv_triang_rec}
+\end{align}
+Apparently this is a triangular map\footnote{Note that abuse of notation for $d=1$: $t_1^{-1}$ is the inverse of $T_1$. But $T^{-1}_1$ is also denoted as the first component of the inverse map}. We need to show that it is indeed the inverse map $T^{-1}\circ T = T\circ T^{-1} = id$. We show this by induction in $d$. For $d=1$ this is apparently true. Assume that the statment holds fof $d-1$. Pick $x \in \mathbb R^d$, the components of $T(x)$ are given by $y_1 = T_1(x_1), y_2 = T_2(x_1, x_1), \dots y_d = T_d(x_1, \dots, x_d)$. By the induction assumption
+we have $T_1^{-1}(y_1)=x_1 \dots, T_{d-1}^{-1}(y_1, \dots y_{d-1})=x_{d-1}$.  For the last component we have $T_d^{-1}(y_1,\dots, y_d) = t_d^{-1}(T_1^{-1}(y_1), \dots, T_{d-1}^{-1}(y_1, \dots,y_{d-1} ), y_d) = t_d^{-1}(x_1, \dots x_{d-1}, y_d)$ for fixed $x_1, \dots x_{d-1}$.  But this is a scalar function and its value at $y_d$ is by construction $x_d$. Thus $T^{-1}\circ T = id$. And similar for $T\circ T^{-1}=id$
+
+From a computational point of view the inverse $T^{-1}$ needs to be computed iteratively as $T^{-1}_i$ relies on $T^{-1}_{1}, \dots, T^{-1}_{i-1}$. Therefore it cannot be computed in a parallel fashion (as opposed to $T$), which can be a limiting factor for models with high dimensions. However, the good news is that each component of this recursion is just the inverse of a scalar function, which can be computed fairly easy also numerically (if necessary).
+
+
+The composition of triangular maps is again a triangular map. Consider two triangular maps $T$ with $x_i' = T_i(x_1, \dots, x_i)$ and $T'$ then $(T'\circ T)_i = T'_i(x'_1, \dots, x'_i) = T'_i(T_1(x_1), \dots, T_i(x_1, \dots, x_i))$ only depends in $x_1, \dots, x_i$. $T'\circ T$ is (strictly) increasing if $T$ and $T'$ are.
+
+In summary,
+\begin{itemize}
+	\item The Jacobian of a triangular map is triangular and the Jacobian Determinant can be computed from the diagonal entries only $\det DT = \prod_i \partial T_i /\partial x_i$.
+	\item The inverse of  a strictly increasing triangular map is triangular and given by Eqs. (\ref{eq_inv_triang}) and (\ref{eq:inv_triang_rec}).
+	\item The composition of triangular maps $T = T^n \circ \dots \circ T^2 \circ T^1 $ is triangular and the Jacobian  factorizes $DT = \prod_{i=1}^{n} DT^i $. If the $T^i$ are strictly increasing then the inverse of $T$  is given by $T = {T^{1}}^{-1} \circ \dots  \circ {T^{n}}^{-1}$. 
+\end{itemize}
+
+\paragraph{Todo:} 
+\begin{itemize}
+\item look at paper again: do we need strictly increasing map $T$ in order to assure invertibility? The paper has outlined this ...
+\item Also the general trafo rule \label{eq:pdf_trafo}  requires a bijective function. The paper comes around to this and shows the formular for increasing triangular functions with a one sided derivative.
+\item Use examples from \cite{jaini_polynomial_flow_2019} to show that this is not so mystical at all (cdf in 1 d case¸)
+ \item conditional version (probably a clean formulation helps with variational autoencoders)
+ 
+\end{itemize}
+
+
+\subsection{Normalizing Flows: basic idea}
+\begin{figure}[h!]
+	\includegraphics[width=\linewidth]{normalizing_flow_img.pdf}
+	\caption{Illustration of normalizing flow.}
+	\label{fig:normalizing_flow}
+\end{figure}
+Let $p_X$ be a complicated distribution and $p_Y$ a known, tractable pdf (uniform or normal distribution). Further assume that we only have samples of $p_X$ $\mathcal D = \{x^{(i)}\}_{i=1}^N$ exists, but is unknown otherwise. We would like to learn a tringular map $f: X\rightarrow Y$ by a neural network  (Fig. \ref{fig:normalizing_flow}).
+
+If we could succeed in learning $f$ then we can use it in two fold manner. We could use it for density estimation and data generation by drawing samples from the known base distribution $y \sim p_Y$ and then obtain new samples in the target distribution $p_X$ from $f^{-1}(y)$. From this samples all relevant statistical properties can be computed.
+ Furthermore this approach can be also used to construct flexible test distributions for the approximate posterior in variational inference \cite{rezende_2015}.
+
+
+Let the base distribution be parametrized by parameters $\phi$, such that $p_Y(y) = p_Y(y|\phi)$ and denote the neural network parameters of $f$ by $\theta$, $f_\theta(x) = f(x|\theta)$. The training (inference) task is to estimate the parameters of the base distribution and the function $\Theta = (\phi,\theta)$ from $\mathcal D$. 
+
+In order to learn the parameters $\theta$ of $f$ one needs to define a loss function, which shall be minimized. This loss function should "compare" the pdfs from the inverse transformation induced by $f$ from (\ref{eq:pdf_trafo_inv}) $p_X(x|\Theta)$ and the true, unknown distribution $p_X(x)$  (of which, we only have samples) in some sense. There are several possible loss functions and the Kullback-Leibler\footnote{$\text{KL}(q||p) = \int q(x) \ln \frac{q(x)}{p(x)} \, dx=  \langle \ln q \rangle_q - \langle \ln p \rangle_q$} divergence is an obvious one:
+\begin{align}
+\mathcal L (\Theta, \mathcal D) &= \text{KL}(p_X(x) \, || \, p_X(x | \Theta)) \nonumber \\ 
+&=  -  \langle \ln p_X(x | \Theta) \rangle _{p_X} + const. \nonumber \\ 
+& \approx - \frac{1}{N}\sum_i^N \ln p_X(x^{(i)} | \Theta) + const.  \nonumber \\ 
+& = - \frac{1}{N}\sum_i ^N \left\{ \ln p_Y(f(x^{(i)} | \theta)\, |\, \phi) + \ln |\det Df(x^{(i)}|\theta)|  \right\}+ const., \label{eq:nf_kl}
+\end{align}
+where the constant terms are contributions independent of the paramters to optimize ($\Theta=\{\theta, \phi\}$). In the second line the expectation value w.r.t. the unknown exact pdf is approximated by the empirical mean (Monte-Carlo approximation) given samples from $\mathcal D$. So (\ref{eq:nf_kl}) can be used to determine gradients on the function $\partial_\theta \mathcal L (\Theta)$ and on the base distribution $\partial_\phi \mathcal L (\Theta)$ needed to minimize the Kullback-Leibler divergence. Note however, that in some implementations only the parameters of $f$ are learned keeping the base distribution fixed.
+
+
+ Alternatively we could aim to determine the parameters $\Theta$ in order maximize the log-likelihood, $\ln p_X(\mathcal D | \Theta)$, and thus minimize the negative of it, 
+\begin{align}
+\mathcal L (\Theta,\mathcal D) &= - \ln p_X(\mathcal D| \Theta) \nonumber \\ 
+&=  - \ln \prod _{i=1}^N p_X(x^{(i)}| \Theta) \nonumber \\
+&= - \sum_i ^N \left\{ \ln p_Y(f(x^{(i)} | \theta)\, |\, \phi) + \ln |\det Df(x^{(i)}|\theta)|  \right\},
+\label{eq:nf_mll}
+\end{align} 
+which eventually gives up to the constant $1/N$ the same  gradients as the KL divergence. Therefore, both versions share the same minimizer\footnote{However, when using an optimizer with given step length the optimal step length could be different as the computed gradients differ by $1/N$. 
+On the other hand it ist most common to optimize the average of the log likelihood, which gives the same result as the KL approach.}.
+There are several other possible loss functions like the Wasserstein metric as reviewed in \cite{normalizing_flows_2019}. 
+
+This is summarized in the basic normalizing flow algorithm for inference and data generation in algorithms \ref{algo:normalizing_flow_inference} and  \ref{algo:normalizing_flow_generation}, respectively. 
+
+\begin{algorithm}[t] \label{algo:normalizing_flow_inference}
+\SetAlgoLined
+\textbf{Input:} \\ 
+\quad Data $\mathcal D $ \\
+\quad A base distribution $p_Y(\cdot|\phi)$ \\
+\quad A function $f_\theta$ \\
+\KwResult{Learned parameters $\phi, \theta$}
+\textbf{Initialize:} $\phi, \theta$ \\
+\While{SGD not converged}{
+	$\mathcal M \sim \mathcal D¸$ (Random minibatch of data) \\
+	Compute loss $\mathcal L (\theta, \phi, \mathcal M)$ from Eq. (\ref{eq:nf_kl}) \\
+	Compute gradients $\partial_\theta \mathcal L(\theta, \phi, \mathcal M)$, 
+	$\partial_\phi \mathcal L(\theta, \phi, \mathcal M)$ \\
+	Udate $\theta, \phi$ using SGD optimizer
+}
+\caption{Inference of a normalizing flow model using stochastic gradient descent (SGD)}
+\end{algorithm} 
+
+\begin{algorithm}[t] \label{algo:normalizing_flow_generation}
+	\SetAlgoLined
+	\textbf{Input:} \\ 
+	\quad A base distribution $p_Y(\cdot|\phi)$ \\
+	\quad A function $f_\theta$ \\
+	\KwResult{Sample $x \sim p_X(\cdot | \theta)$}
+	{
+	$y \sim p_Y(\cdot|\phi)$  \\
+	$x = f^{-1}_\theta(y)$
+}
+	\caption{Data generation with a normalizing flow}
+\end{algorithm} 
+\subsection{Constructing $f$}
+So far no statement of how to construct $f$ has been made. Theorem \ref{thm:bogachev} suggests to construct $f$ as a triangular map. The theorem only guarantees that there is an increasing triangular map. However, as we wish to generate samples from the inverse map in practice strictly increasing triangular maps are constructed. Surprisingly some of these have been shown to be universal \cite{jaini_polynomial_flow_2019, huang_2018_neural_autoregressive_flows}.
+
+
+
+\section{Variational Autoencoders}
+\cite{Kingma_2019_AnIntroductionToVariationalAutoencoders}
 
 
 \section{Time Series Neural Networks}

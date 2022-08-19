@@ -35,7 +35,7 @@ So, first we need to specify a family of variational densities $\mathcal Q$ and 
 	\mathcal{F}(q) &= \langle \log p(x | z) \rangle _{q(z)} + \langle \log p(z) \rangle _{q(z)}  - \langle \log q(z) \rangle _{q(z)} \nonumber \\ 
 	        &= \langle \log p(x | z) \rangle _{q(z)} - \kl{q(z)}{p(z)}.
 \end{align}
-The density that maximizes the ELBO thus compromises between  i) putting most probability weight on $z$ where the posterior $p(x|z)$ is large and ii) beeing close to the prior $p(z)$. Furthermore if we assume that the $N$ observed data points are iid of the form $x = x_1, \dots, x_N$  the first expression reads $\langle \log p(x | z) \rangle _{q(z)} = \sum _{i = 1} ^N\langle \log p(x_i | z) \rangle _{q(z)}$. Thus, the first term becomes more important for large number of observed data points. But this is just in line with the usual Bayesian behavior.
+The density that maximizes the ELBO thus compromises between  i) putting most probability weight on $z$ where the likelihood $p(x|z)$ is large (i.e., minimizing the reconstruction error) and ii) beeing close to the prior $p(z)$. Furthermore if we assume that the $N$ observed data points are iid of the form $x = x_1, \dots, x_N$  the first expression reads $\langle \log p(x | z) \rangle _{q(z)} = \sum _{i = 1} ^N\langle \log p(x_i | z) \rangle _{q(z)}$. Thus, the first term becomes more important for large number of observed data points. But this is just in line with the usual Bayesian behavior.
 
 Furthermore the ELBO bounds the (log) evidence $p(x)$,
 \begin{align}
