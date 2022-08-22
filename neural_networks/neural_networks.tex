@@ -674,7 +674,10 @@ The composition of triangular maps is again a triangular map. Consider two trian
 
 In summary,
 \begin{itemize}
-	\item The Jacobian of a triangular map is triangular and the Jacobian Determinant can be computed from the diagonal entries only $\det DT = \prod_i \partial T_i /\partial x_i$.
+	\item The Jacobian of a triangular map is triangular and the Jacobian Determinant can be computed from the diagonal entries only
+	\begin{align} \label{eq:jac_triangular}
+		\det DT = \prod_i \partial T_i /\partial x_i.
+	\end{align} 
 	\item The inverse of  a strictly increasing triangular map is triangular and given by Eqs. (\ref{eq_inv_triang}) and (\ref{eq:inv_triang_rec}).
 	\item The composition of triangular maps $T = T^n \circ \dots \circ T^2 \circ T^1 $ is triangular and the Jacobian  factorizes $DT = \prod_{i=1}^{n} DT^i $. If the $T^i$ are strictly increasing then the inverse of $T$  is given by $T = {T^{1}}^{-1} \circ \dots  \circ {T^{n}}^{-1}$. 
 \end{itemize}
@@ -701,22 +704,22 @@ If we could succeed in learning $f$ then we can use it in two fold manner. We co
  Furthermore this approach can be also used to construct flexible test distributions for the approximate posterior in variational inference \cite{rezende_2015}.
 
 
-Let the base distribution be parametrized by parameters $\phi$, such that $p_Y(y) = p_Y(y|\phi)$ and denote the neural network parameters of $f$ by $\theta$, $f_\theta(x) = f(x|\theta)$. The training (inference) task is to estimate the parameters of the base distribution and the function $\Theta = (\phi,\theta)$ from $\mathcal D$. 
+Let the base distribution be parametrized by parameters $\phi$, such that $p_Y(y) = p_Y(y|\phi)$ and denote the neural network parameters of $f$ by $\theta$, $f_\theta(x) = f(x|\theta)$. The training (inference) task is to estimate the parameters of the base distribution and the function $(\phi,\theta)$ from $\mathcal D$. 
 
-In order to learn the parameters $\theta$ of $f$ one needs to define a loss function, which shall be minimized. This loss function should "compare" the pdfs from the inverse transformation induced by $f$ from (\ref{eq:pdf_trafo_inv}) $p_X(x|\Theta)$ and the true, unknown distribution $p_X(x)$  (of which, we only have samples) in some sense. There are several possible loss functions and the Kullback-Leibler\footnote{$\text{KL}(q||p) = \int q(x) \ln \frac{q(x)}{p(x)} \, dx=  \langle \ln q \rangle_q - \langle \ln p \rangle_q$} divergence is an obvious one:
+In order to learn the parameters $\theta$ of $f$ one needs to define a loss function, which shall be minimized. This loss function should "compare" the pdfs from the inverse transformation induced by $f$ from (\ref{eq:pdf_trafo_inv}) $p_X(x|\phi, \theta)$ and the true, unknown distribution $p_X(x)$  (of which, we only have samples) in some sense. There are several possible loss functions and the Kullback-Leibler\footnote{$\text{KL}(q||p) = \int q(x) \ln \frac{q(x)}{p(x)} \, dx=  \langle \ln q \rangle_q - \langle \ln p \rangle_q$} divergence is an obvious one:
 \begin{align}
-\mathcal L (\Theta, \mathcal D) &= \text{KL}(p_X(x) \, || \, p_X(x | \Theta)) \nonumber \\ 
-&=  -  \langle \ln p_X(x | \Theta) \rangle _{p_X} + const. \nonumber \\ 
-& \approx - \frac{1}{N}\sum_i^N \ln p_X(x^{(i)} | \Theta) + const.  \nonumber \\ 
+\mathcal L (\phi, \theta, \mathcal D) &= \text{KL}(p_X(x) \, || \, p_X(x | \phi, \theta)) \nonumber \\ 
+&=  -  \langle \ln p_X(x | \phi, \theta) \rangle _{p_X} + const. \nonumber \\ 
+& \approx - \frac{1}{N}\sum_i^N \ln p_X(x^{(i)} | \phi, \theta) + const.  \nonumber \\ 
 & = - \frac{1}{N}\sum_i ^N \left\{ \ln p_Y(f(x^{(i)} | \theta)\, |\, \phi) + \ln |\det Df(x^{(i)}|\theta)|  \right\}+ const., \label{eq:nf_kl}
 \end{align}
-where the constant terms are contributions independent of the paramters to optimize ($\Theta=\{\theta, \phi\}$). In the second line the expectation value w.r.t. the unknown exact pdf is approximated by the empirical mean (Monte-Carlo approximation) given samples from $\mathcal D$. So (\ref{eq:nf_kl}) can be used to determine gradients on the function $\partial_\theta \mathcal L (\Theta)$ and on the base distribution $\partial_\phi \mathcal L (\Theta)$ needed to minimize the Kullback-Leibler divergence. Note however, that in some implementations only the parameters of $f$ are learned keeping the base distribution fixed.
+where the constant terms are contributions independent of the paramters to optimize $(\phi, \theta)$. In the second line the expectation value w.r.t. the unknown exact pdf is approximated by the empirical mean (Monte-Carlo approximation) given samples from $\mathcal D$. So (\ref{eq:nf_kl}) can be used to determine gradients on the function $\partial_\theta \mathcal L (\phi, \theta)$ and on the base distribution $\partial_\phi \mathcal L (\phi, \theta)$ needed to minimize the Kullback-Leibler divergence. Note however, that in some implementations only the parameters $\theta$ of $f$ are learned keeping the parameters of the  base distribution $\phi$ fixed.
 
 
- Alternatively we could aim to determine the parameters $\Theta$ in order maximize the log-likelihood, $\ln p_X(\mathcal D | \Theta)$, and thus minimize the negative of it, 
+ Alternatively we could aim to determine the parameters $(\phi, \theta)$ in order maximize the log-likelihood, $\ln p_X(\mathcal D | \phi, \theta)$, and thus minimize the negative of it, 
 \begin{align}
-\mathcal L (\Theta,\mathcal D) &= - \ln p_X(\mathcal D| \Theta) \nonumber \\ 
-&=  - \ln \prod _{i=1}^N p_X(x^{(i)}| \Theta) \nonumber \\
+\mathcal L (\phi, \theta,\mathcal D) &= - \ln p_X(\mathcal D| \phi, \theta) \nonumber \\ 
+&=  - \ln \prod _{i=1}^N p_X(x^{(i)}| \phi, \theta) \nonumber \\
 &= - \sum_i ^N \left\{ \ln p_Y(f(x^{(i)} | \theta)\, |\, \phi) + \ln |\det Df(x^{(i)}|\theta)|  \right\},
 \label{eq:nf_mll}
 \end{align} 
@@ -757,8 +760,37 @@ This is summarized in the basic normalizing flow algorithm for inference and dat
 	\caption{Data generation with a normalizing flow}
 \end{algorithm} 
 \subsection{Constructing $f$}
-So far no statement of how to construct $f$ has been made. Theorem \ref{thm:bogachev} suggests to construct $f$ as a triangular map. The theorem only guarantees that there is an increasing triangular map. However, as we wish to generate samples from the inverse map in practice strictly increasing triangular maps are constructed. Surprisingly some of these have been shown to be universal \cite{jaini_polynomial_flow_2019, huang_2018_neural_autoregressive_flows}.
+So far no statement of how to construct $f$ has been made. Theorem \ref{thm:bogachev} suggests to construct $f$ as a triangular map. The theorem only guarantees that there is an increasing triangular map. However, as we wish to generate samples from the inverse map in practice strictly increasing triangular maps are constructed. Surprisingly some of these have been shown to be universal \cite{jaini_polynomial_flow_2019, huang_2018_neural_autoregressive_flows}. While most of the normalzing flows are triangular maps, there are exceptions. In either case a common strategy to construct more complex normalizing flows is composition. It is illustrative to start with some simple transformations $f: \mathbb{R}^d \rightarrow \mathbb{R}^d$.
+\\
+\\
+\textbf{Example: Component wise affine linear flow.} Consider the component wise map $y_i = e^{\alpha_i} x_i + \beta_i$. This is a trivial triangular map because $T_i(x_1, \dots, x_i) = T_i(x_i)$. It's inverse is given by $e^{-\alpha_i} (y_i - \beta_i)$. Its Jacobian is given by $Df = \text{diag}(e^{\alpha_1}, \dots, e^{\alpha_d})$ and therefore $\ln |\det Df| = \ln |\prod_i e^{\alpha_i}| = \ln \prod_i e^{\alpha_i} = \sum_i \alpha_i$. This is essentially a affine linear map with the additional exponential map the ensures invertibility. \\ \\
+\textbf{Example Permutation.}
+A permuation $y = P_\pi x$ is given by an orthogonal permutation matrix $P^{-1}_\pi =P_{\pi^{-1}} = P^{T}_\pi$. It has Jacobi determinant $\det Df = \text{sgn}{\pi}$ and therefore $\ln |\det Df| = \ln 1 = 0$. This is \textit{not} a triangular map. 
+However it is commonly used as "intertwiner" in a composition. This has been shown to be beneficial in practice. The reason is that triangular maps inherently depend on the ordering of the random variables (think of factorization of a joint pdf in terms of conditional pdfs). While this is in the limit of infinitly many training data probably not a problem, in practice changing the order of the variables may improve performance (in particular when triangular maps are composed). A generalization of the permutation groups are so called \textit{linear normalizing flows}, which aim to determine the best ordering.
 
+\paragraph{Autoregressive flows.}
+The affine linear flow extends to a more general form, which is still triangular, $y_{i} = e^{\alpha_{i}(x_{1:i-1})} x_{i} + \beta_i(x_{1:i-1})$, where $\alpha_{i}$ and $\beta_{i}$ are now functions of $x_{1:i-1} = x_1, \dots x_{i-1}$. 
+
+More generally, let $h_i(\cdot\,; \alpha_i): \mathbb{R} \rightarrow \mathbb{R}$ be a bijections parametrized by $\theta_i \in \mathbb{R}^{|\theta_{i}|}$. Then a triangular map is called autoregressive flow if it is of the form 
+\begin{align} \label{eq:auto_regressive_flow}
+	y_i =T_i(x_1,\dots, x_i) = h_i(x_i; \gamma_i(x_{1:i-1})), \quad i=1,\dots,d, 
+\end{align} 
+with  $\alpha_i = \gamma_i(x_{1:i-1})$. The function $h_i$ is called coupling function or transformer and  $\gamma_i$ is called conditioner. So the conditioner learns the parameters for the coupling function. So the conditioner "learns" the parameters for the univarite map $h_i$. 
+
+As autoregressive flows are triangular, all properties hold -- and they further simplify. In particular for the diagonal element of the Jacobian (\ref{eq:jac_triangular}), $\partial y_i / \partial x_i$ only the derivative of the coupling functions needs to be comupted (keeping the conditioner fixed) in (\ref{eq:auto_regressive_flow}). And similar, the inverse needs to be computed only with respect to the coupling function: from (\ref{eq:inv_triang_rec})
+\begin{align}
+	T_d^{-1}(y_1,\dots, y_d) 
+	&= t_i^{-1}(T_1^{-1}(y_1), \dots, T_{i-1}^{-1}(y_1, \dots,y_{i-1} ), y_i) \nonumber \\ 
+	&=t_i^{-1}(x_1\dots x_{i-1}, y_i) \nonumber \\
+	&=h_i^{-1}(y_i; \gamma_i(x_1\dots x_{i-1})),
+\end{align}
+where in the last line the specific form of (\ref{eq:auto_regressive_flow}) was used. The inverse needs still be computed in a recursive fashion as $h_i^{-1}(y_i; \gamma(x_1, \cdots, x_{i-1}))$ can only be computed once the $x_1, \dots x_{i-1}$ (i.e. the inverses of  $h_1^{-1}, h_{i-1}^{-1}$) are known. 
+
+The property that the Jacobian and the inverse need not be evaluated for the conditioner functions is exploited in constructing autoregressive flows: the conditioner can be any "crazy" function (neural network) and only the coupling function needs fine tuning in order to be strictly increasing (bijective). From a theoretical point of view this is also beneficial as one can exploit the universal approximation theorem for the conditioner part and the universality property needs to shown only for the univariate coupling functions. \cite{jaini_polynomial_flow_2019, wehenkel_unconstraint_monotonic_neural_networks, huang_2018_neural_autoregressive_flows}
+
+\paragraph{Real NVP \cite{dinh_2016_real_nvp}.}
+
+\subsection{Conditional probabilities}
 
 
 \section{Variational Autoencoders}
