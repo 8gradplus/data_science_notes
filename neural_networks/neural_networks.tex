@@ -8,6 +8,7 @@
 \usetikzlibrary{arrows}
 \newtheorem{theorem}{Theorem}
 \newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
 \usepackage{standalone}
 \usepackage{tikz}
 \usepackage[ruled,vlined]{algorithm2e}
@@ -688,6 +689,11 @@ In summary,
 \item Also the general trafo rule \label{eq:pdf_trafo}  requires a bijective function. The paper comes around to this and shows the formular for increasing triangular functions with a one sided derivative.
 \item Use examples from \cite{jaini_polynomial_flow_2019} to show that this is not so mystical at all (cdf in 1 d case¸)
  \item conditional version (probably a clean formulation helps with variational autoencoders)
+\item Batch normalization as normalizing flow
+\item See also Peter Abbeel on generative models: \\
+lectures + papers: https://sites.google.com/view/berkeley-cs294-158-sp20/home \\
+%papers: %https://www.dropbox.com/s/f09vfmfjb9thaef/gm_reading_list.zip?dl=0&file_subpath=%2Fgm_reading_list
+ 
  
 \end{itemize}
 
@@ -760,13 +766,28 @@ This is summarized in the basic normalizing flow algorithm for inference and dat
 	\caption{Data generation with a normalizing flow}
 \end{algorithm} 
 \subsection{Constructing $f$}
-So far no statement of how to construct $f$ has been made. Theorem \ref{thm:bogachev} suggests to construct $f$ as a triangular map. The theorem only guarantees that there is an increasing triangular map. However, as we wish to generate samples from the inverse map in practice strictly increasing triangular maps are constructed. Surprisingly some of these have been shown to be universal \cite{jaini_polynomial_flow_2019, huang_2018_neural_autoregressive_flows}. While most of the normalzing flows are triangular maps, there are exceptions. In either case a common strategy to construct more complex normalizing flows is composition. It is illustrative to start with some simple transformations $f: \mathbb{R}^d \rightarrow \mathbb{R}^d$.
+So far no statement of how to construct $f$ has been made. Theorem \ref{thm:bogachev} suggests to construct $f$ as a triangular map. The theorem only guarantees that there is an increasing triangular map. However, as we wish to generate samples from the inverse map in practice strictly increasing triangular maps are constructed. Surprisingly some of these have been shown to be universal \cite{jaini_polynomial_flow_2019, huang_2018_neural_autoregressive_flows}\footnote{A flow is called universal if it can learn any target density to any required precision given sufficient capacity and data. The existence of such a map is guaranteed by Theorem \ref{thm:bogachev}}. 
+While most of the normalzing flows are triangular maps, there are exceptions. In either case a common strategy to construct more complex normalizing flows is composition. It is illustrative to start with some simple transformations $f: \mathbb{R}^d \rightarrow \mathbb{R}^d$.
 \\
 \\
-\textbf{Example: Component wise affine linear flow.} Consider the component wise map $y_i = e^{\alpha_i} x_i + \beta_i$. This is a trivial triangular map because $T_i(x_1, \dots, x_i) = T_i(x_i)$. It's inverse is given by $e^{-\alpha_i} (y_i - \beta_i)$. Its Jacobian is given by $Df = \text{diag}(e^{\alpha_1}, \dots, e^{\alpha_d})$ and therefore $\ln |\det Df| = \ln |\prod_i e^{\alpha_i}| = \ln \prod_i e^{\alpha_i} = \sum_i \alpha_i$. This is essentially a affine linear map with the additional exponential map the ensures invertibility. \\ \\
-\textbf{Example Permutation.}
-A permuation $y = P_\pi x$ is given by an orthogonal permutation matrix $P^{-1}_\pi =P_{\pi^{-1}} = P^{T}_\pi$. It has Jacobi determinant $\det Df = \text{sgn}{\pi}$ and therefore $\ln |\det Df| = \ln 1 = 0$. This is \textit{not} a triangular map. 
+\textbf{Example: Component wise affine linear flow.} Consider the component wise map $y_i = e^{\alpha_i} x_i + \beta_i$. This is a trivial triangular map because $T_i(x_1, \dots, x_i) = T_i(x_i)$. It's inverse is given by $x_i = e^{-\alpha_i} (y_i - \beta_i)$. Its Jacobian is given by $Df = \text{diag}(e^{\alpha_1}, \dots, e^{\alpha_d})$ and therefore $\ln |\det Df| = \ln |\prod_i e^{\alpha_i}| = \ln \prod_i e^{\alpha_i} = \sum_i \alpha_i$. This is essentially a affine linear map with the additional exponential map that ensures invertibility for any $\alpha_i$. \\ \\
+\textbf{Example: Permutation.}
+A permuation $f_\pi: y = P_\pi x$ is given by an orthogonal permutation matrix $P^{-1}_\pi =P_{\pi^{-1}} = P^{T}_\pi$. It has Jacobi determinant $\det Df = \text{sgn}(\pi)$ and therefore $\ln |\det Df| = \ln 1 = 0$. This is \textit{not} a triangular map. 
 However it is commonly used as "intertwiner" in a composition. This has been shown to be beneficial in practice. The reason is that triangular maps inherently depend on the ordering of the random variables (think of factorization of a joint pdf in terms of conditional pdfs). While this is in the limit of infinitly many training data probably not a problem, in practice changing the order of the variables may improve performance (in particular when triangular maps are composed). A generalization of the permutation groups are so called \textit{linear normalizing flows}, which aim to determine the best ordering.
+\\ \\
+\textbf{Example: batch normalization.} Batch normalization \cite{ioffe_2015_batch_normalization} is used to speed up training can be understood as normalizing flow. It is of the adapted form \cite{papamakarios_2017_maf}
+\begin{align}
+	y_i = \frac{x_i - \tilde \mu_i}{\left(\tilde \sigma_i^2 +  \varepsilon\right)^{\frac{1}{2}}} \, e^{\alpha_i} + \beta_i, ~ i=1\dots d, 
+\end{align}
+where $\alpha_i$, $\beta_i$ are the trainable parameters  and $\varepsilon$ is a small constant (hyperparameter) to ensure numerical stability ($\varepsilon=10^{-5}$).  $\tilde \mu_i$ and $\tilde \sigma_i$ are the empirical means and standard deviations derived from data $\mathcal D = \{x_i^{n}\}_{n=1}^N$ along dimension $i$ for a minibatch (during training) and for test data (during prediction).
+Different choices for the choice of sampling space for training and prediction phase exist. As the map is defined component wise it is also triangular. It's inverse is given by
+\begin{align}
+x_i = \left(y_i - \beta_i\right) \left(\tilde \sigma_i^2 +  \varepsilon\right)^{\frac{1}{2}} \, e^{-\alpha_i} + \tilde \mu_i, ~ i=1\dots d, 
+\end{align}
+and the Jacobian is diagonal $Df = \text{diag}(e^{\alpha_1} /\left(\tilde \sigma_1^2 +  \varepsilon\right)^{\frac{1}{2}}, \dots, e^{\alpha_d} /\left(\tilde \sigma_d^2 +  \varepsilon\right)^{\frac{1}{2}}   )$, and therefore 
+\begin{align}
+	\ln |\det Df| = \sum_{i=1}^d \left( \alpha_i - \frac{1}{2}\ln\left(\tilde \sigma_i^2 +  \varepsilon\right)\right).
+\end{align}
 
 \paragraph{Autoregressive flows.}
 The affine linear flow extends to a more general form, which is still triangular, $y_{i} = e^{\alpha_{i}(x_{1:i-1})} x_{i} + \beta_i(x_{1:i-1})$, where $\alpha_{i}$ and $\beta_{i}$ are now functions of $x_{1:i-1} = x_1, \dots x_{i-1}$. 
@@ -775,26 +796,113 @@ More generally, let $h_i(\cdot\,; \alpha_i): \mathbb{R} \rightarrow \mathbb{R}$ 
 \begin{align} \label{eq:auto_regressive_flow}
 	y_i =T_i(x_1,\dots, x_i) = h_i(x_i; \gamma_i(x_{1:i-1})), \quad i=1,\dots,d, 
 \end{align} 
-with  $\alpha_i = \gamma_i(x_{1:i-1})$. The function $h_i$ is called coupling function or transformer and  $\gamma_i$ is called conditioner. So the conditioner learns the parameters for the coupling function. So the conditioner "learns" the parameters for the univarite map $h_i$. 
+with  $\alpha_i = \gamma_i(x_{1:i-1})$. The function $h_i$ is called coupling function or transformer and  $\gamma_i$ is called conditioner function. For $i=1$ the conditioner does not depend on $x$.  So, the conditioner "learns" the parameters for the univarite coupling function $h_i$. 
 
 As autoregressive flows are triangular, all properties hold -- and they further simplify. In particular for the diagonal element of the Jacobian (\ref{eq:jac_triangular}), $\partial y_i / \partial x_i$ only the derivative of the coupling functions needs to be comupted (keeping the conditioner fixed) in (\ref{eq:auto_regressive_flow}). And similar, the inverse needs to be computed only with respect to the coupling function: from (\ref{eq:inv_triang_rec})
-\begin{align}
+\begin{align} \label{eq:auto_regressive_flow_inv}
 	T_d^{-1}(y_1,\dots, y_d) 
 	&= t_i^{-1}(T_1^{-1}(y_1), \dots, T_{i-1}^{-1}(y_1, \dots,y_{i-1} ), y_i) \nonumber \\ 
 	&=t_i^{-1}(x_1\dots x_{i-1}, y_i) \nonumber \\
 	&=h_i^{-1}(y_i; \gamma_i(x_1\dots x_{i-1})),
 \end{align}
-where in the last line the specific form of (\ref{eq:auto_regressive_flow}) was used. The inverse needs still be computed in a recursive fashion as $h_i^{-1}(y_i; \gamma(x_1, \cdots, x_{i-1}))$ can only be computed once the $x_1, \dots x_{i-1}$ (i.e. the inverses of  $h_1^{-1}, h_{i-1}^{-1}$) are known. 
+where in the last line the specific form of (\ref{eq:auto_regressive_flow}) was used. The inverse has still a recursive form as $h_i^{-1}(y_i; \gamma(x_1, \cdots, x_{i-1}))$ can only be computed once the $x_1, \dots x_{i-1}$ (i.e. the inverses  $h_1^{-1}, h_{i-1}^{-1}$) are known. 
 
 The property that the Jacobian and the inverse need not be evaluated for the conditioner functions is exploited in constructing autoregressive flows: the conditioner can be any "crazy" function (neural network) and only the coupling function needs fine tuning in order to be strictly increasing (bijective). From a theoretical point of view this is also beneficial as one can exploit the universal approximation theorem for the conditioner part and the universality property needs to shown only for the univariate coupling functions. \cite{jaini_polynomial_flow_2019, wehenkel_unconstraint_monotonic_neural_networks, huang_2018_neural_autoregressive_flows}
 
-\paragraph{Real NVP \cite{dinh_2016_real_nvp}.}
+\paragraph{Real NVP \cite{dinh_2016_real_nvp}.} Fix $\ell < d$ then the real NVP normalzing flow is defined as
+\begin{align} \label{eq:real_nvp}
+	y_{1:\ell} &= x_{1:\ell} \nonumber \\
+	y_{\ell+1:d} &= x_{\ell + 1 : d}\, \odot \exp(\alpha(x_{1:\ell})) + \beta(x_{1:\ell}), 
+\end{align}
+where the pair of conditioner functions $\gamma=(\alpha,\beta)$ with $\alpha, \beta: \mathbb{R}^\ell \rightarrow \mathbb{R}^{d - \ell} $ are neural networks with appropriate dimensions (whose parameters are optimized by e.g. algorithm \ref{algo:normalizing_flow_inference}). This kind of block parametrizations of normalizing flows are also called \textit{coupling layers}. 
+The inverse of real NVP is given by
+\begin{align} \label{eq:real_nvp}
+x_{1:\ell} &= y_{1:\ell} \nonumber \\
+x_{\ell+1:d} &= \left(y_{\ell + 1 : d}-  \beta(x_{1:\ell}) \right)\, \odot \exp(-\alpha(y_{1:\ell})), 
+\end{align}
+and the diagonal elements of the Jacobian 
+\begin{align}
+\begin{pmatrix}
+1_\ell & 0 \\
+\cdot & \text{diag} \left(e^{\alpha(x_{1:\ell})}\right),
+\end{pmatrix}
+\end{align}
+and therefore $\ln |\det Df| = \sum_{i=1}^{d-\ell}  \alpha_i(x_{1:\ell})$, that is the sum over all components of the vector-valued function $\alpha$.
 
+To see that this is indeed an  autoregressive flow write equivalently
+\begin{align}
+	y_i = T(x_{1:i}) = \begin{cases}
+	T(x_i) = x_i  ~~ \text{ for } i\leq \ell\\ 
+	T(x_{1:\ell}, x_i) =  x_i \exp(\alpha_i(x_{1:\ell})) + \beta_i(x_{1:\ell}) ~~ \text{ for } i > \ell,
+	\end{cases}
+\end{align}
+where $\alpha_i, \beta_i$ are the $i$-th components of $\alpha, \beta \in \mathbb{R}^{d-\ell}$, respectively.
+As $x_{1:\ell}$ in (\ref{eq:real_nvp}) are not transformed, in practice compositions with alternative permutations are used, $f = \dots f_\pi \circ  f_{NVP} \circ f_\pi \circ f_{NVP} $. After the permutation $f_\pi$ untouched $x$ parts enter a non trivial map. The coupling function in \ref{eq:real_nvp} is affine linear. The unusual exponential map ensures invertiblity for any $\alpha(x_1:\ell)$. Therefore there are no constraints on the underlying neural network for the conditioner. 
+
+\paragraph{Masked autoregressive flow (MAF)\cite{papamakarios_2017_maf}.}  The conditioners $\alpha, \beta$ in real-NVP are all the same for $i > \ell + 1$ as the take as input $x_{1:\ell}$ and therefore are not of the most general form of (\ref{eq:auto_regressive_flow}). MAF generlizes the parametrization of the conditioners in this direction:
+\begin{align} \label{eq:real_nvp}
+y_{i} &= x_i \exp(\alpha_i(x_{1:i-1})) + \beta_i(x_{1:i-1}),
+\end{align}
+where for each component there is now a pair of conditioner functions $\gamma_i=(\alpha_i, \beta_i), ~ i=1\dots d$, with  $\alpha_i, \beta_i: \mathbb{R}^{i-1} \rightarrow \mathbb{R}$ for $i>1$ (and  constants for $i=1$). The logarithm of the Jacobian determinant is $\ln |\det Df| = \sum_{i=1}^d\alpha_i(x_{1:i-1})$. The inverse follows from 
+(\ref{eq:auto_regressive_flow_inv}) recursively, 
+\begin{align} \label{eq:maf}
+	x_{i} &= (y_i -  \beta_i(x_{1:i-1})) \exp(\alpha_i(x_{1:i-1})). 
+\end{align}
+While MAF is a straightforward extension of the conditioner over real-NVP, it requires to set up $2d$ neural networks $(\alpha_i, \beta_i), ~ i=1\dots d$ as opposed to only two in real-NVP ($\alpha, \beta$)\footnote{One could express the pair of neural networks $\alpha, \beta: \mathbb{R}^\ell \rightarrow \mathbb{R}^{d - \ell}$ by doubling the output dimension and compute one neural network $\gamma: \mathbb{R}^\ell \rightarrow \mathbb{R}^{2(d - \ell)}$ and then use slicing in the coupling function (which can be computed vectorized). Typically one enlarges the network in this case to have a similar amount of parameters as as when working with two networks in order to ensure similar expressiveness. Similar for MAF $\gamma_i: \mathbb{R}^{i-1} \rightarrow \mathbb{R}^{2}$. But then there are still $d$ of such combined networks.}. So for a single function evaluation of (\ref{eq:maf}) one needs $2d$ neural network forward passes, which can be cumbersome for large $d$.  However, one can combine these $2d$ neural networks into a single \textit{masked} neural network \cite{germain_2015_made}.
+
+\paragraph{Masked conditioner networks}
+ 
+\paragraph{Neural autoregressive flow (NAF) \cite{huang_2018_neural_autoregressive_flows}.} 
+
+\paragraph{Sum-of-squares polynomial Flow (SOS) \cite{jaini_polynomial_flow_2019}.}
+So far only affine coupling functions were used. In order to obtain more expressive coupling functions a more flexible strictly increasing coupling function is constructed from polynomials. The basic idea is to obtain a positive function by squaring a polynomial (these squared polynomials can be again expanded with some coefficients) and then construct a strictly increasing function by integrating it. Generally,
+\begin{proposition}{\cite{jaini_polynomial_flow_2019}}
+	A univariate real polynomial is increasing iff it can be written as
+	\begin{align}\label{eq:sum_of_squares_flow}
+		h (x; a, b) = b + \int_0^x\sum_{j=1}^k \left(\sum_{i=0}^r a_{i, j} u^i \right) ^2 \, du,
+	\end{align}
+	with $b\in \mathbb{R},  a\in\mathbb{R}^{(r+1)\times (k)}$. It is strictly increasing iff it is not constant.
+	Furthermore let C be the space of real univariate continuous functions, equipped with the topology of compact convergence. Then, the set of increasing polynomials is dense
+	in the cone of increasing continuous functions.
+\end{proposition}
+The hyperparameter $r\in \mathbb{N}$ is called the degree of the polynomial, and $k\in \mathbb{N}$  is called number of polynomials
+A autoregressive flow can be readily constructed by
+\begin{align}
+	y_i = h_i(x_i, a_i, b_i) = h(x_i, a_i(x_{1:i-1}), b_i(x_{1:i-1})), 
+\end{align}
+with the coupling function (\ref{eq:sum_of_squares_flow}) and 
+$\gamma_i(x_{1:i-1}) = (a_i(x_{1:i-1}), b_i(x_{1:i-1}))$ can be approximated by e.g., a masked conditioner network. 
+That these polynomials are dense in the cone of increasing continuous function essentially shows the universality property of this flow. 
+
+In practice only small values for the hyper parameters $k, r$ are used ($k=5, r=4$ or so).  Further expressiveness can be achieved by composition (deep) or increasing $r$ (wide), where the latter is theoretically more sound but introduces more parameters. Because there are just polynomials the integral can be performed analytically. The diagonal element of the Jacobian is given by\footnote{\begin{align}
+		\frac{\partial}{\partial x} \int _0 ^x f(u) \, du =\frac{\partial}{\partial x} \left(F(x) - F(0)\right)= \frac{\partial}{\partial x} F(x)= f(x)
+\end{align}} 
+\begin{align}
+	\frac{\partial y_\ell}{\partial x_\ell} = \sum_{j=1}^k \left(\sum_{i=0}^r \left(a_\ell\right)_{i, j} x_\ell^i \right) ^2.
+\end{align}
+However the inverse cannot be computed analytically. It needs to be computed numerically for each $y_i$ on the real line together with the general formular (\ref{eq:auto_regressive_flow_inv}). 
+
+SOS is easier to train than NAF as there are no constraints on parameters of the coupling function.
+Also note that for $r=0$ SOS reduces to the affine couling function.
+
+
+
+\paragraph{Summary.} While there are several non-triagonal flows, autoregressive forms are a promising avenue to construct flows. 
+\begin{itemize}
+	\item By their definition they are triangular and thus Theorem \ref{thm:bogachev} may be exploited. 
+	\item The \textbf{conditioning function} can be approximated efficiently by masked conditioners and accurately due to the universal approximation theorem for deep neural networks. 
+	\item For the \textbf{coupling function} it is enough to construct univariate (strictly) increasing functions. This can be achieved by care carefully designing a neural network as in NAF. More generally this can also achieved by integrating non-negative functions \cite{wehenkel_unconstraint_monotonic_neural_networks} as in the Sum-of-squares polynomial flow. 
+	\item While such constructions are necessary to assure universality they have a drawback compared to affine coupling functions (or other simple, yet analytically invertible coupling functions): for sampling they typically need to be inverted numerically (for each $y_i$ in one dimension respectively). If there are more sampling steps then inference steps, then one could also learn the $f^{-1}$ rather than $f$ like in the inverse autoregressive flow (IAF) \cite{kingma_2016_iaf}. If both, efficient sampling and density estimates is important then \cite{oord_2017_parallel_wavenet} train a student network for $f^{-1}$ with $f$ as a teacher network.
+\end{itemize}
 \subsection{Conditional probabilities}
+\cite{papamakarios_2017_maf}
 
+\subsection{Dequantization}
+The theory assumes continuous random variables. However, in practice often discrete data occur. Assume that the input data data are count data $x_i \in \mathbb{N}$. Instead of the real data one adds uniform noise, $x_i' =  x_i + Unif(-1/2, 1/2))$ and feeds that data into the flow algorithm. This process is called dequantization.
 
 \section{Variational Autoencoders}
 \cite{Kingma_2019_AnIntroductionToVariationalAutoencoders}
+http://krasserm.github.io/2019/03/14/bayesian-neural-networks/
 
 
 \section{Time Series Neural Networks}
