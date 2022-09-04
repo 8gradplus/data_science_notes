@@ -14,6 +14,10 @@
 \usepackage[ruled,vlined]{algorithm2e}
 \usetikzlibrary{matrix,chains,positioning,decorations.pathreplacing,arrows}
 \usetikzlibrary{positioning,calc}
+\newcommand{\vin}{\rotatebox[origin=c]{90}{$\in$}}
+\newcommand{\cont}[2]{%
+	\underset{\underset{\scriptstyle\mathstrut #2}{\vin}}{#1}%
+}
 
 \begin{document}
 \bibliographystyle{plain}
@@ -683,19 +687,19 @@ In summary,
 	\item The composition of triangular maps $T = T^n \circ \dots \circ T^2 \circ T^1 $ is triangular and the Jacobian  factorizes $DT = \prod_{i=1}^{n} DT^i $. If the $T^i$ are strictly increasing then the inverse of $T$  is given by $T = {T^{1}}^{-1} \circ \dots  \circ {T^{n}}^{-1}$. 
 \end{itemize}
 
-\paragraph{Todo:} 
-\begin{itemize}
-\item look at paper again: do we need strictly increasing map $T$ in order to assure invertibility? The paper has outlined this ...
-\item Also the general trafo rule \label{eq:pdf_trafo}  requires a bijective function. The paper comes around to this and shows the formular for increasing triangular functions with a one sided derivative.
-\item Use examples from \cite{jaini_polynomial_flow_2019} to show that this is not so mystical at all (cdf in 1 d case¸)
- \item conditional version (probably a clean formulation helps with variational autoencoders)
-\item Batch normalization as normalizing flow
-\item See also Peter Abbeel on generative models: \\
-lectures + papers: https://sites.google.com/view/berkeley-cs294-158-sp20/home \\
+%\paragraph{Todo:} 
+%\begin{itemize}
+%\item look at paper again: do we need strictly increasing map $T$ in order to %assure invertibility? The paper has outlined this ...
+%\item Also the general trafo rule \label{eq:pdf_trafo}  requires a bijective %function. The paper comes around to this and shows the formular for increasing %triangular functions with a one sided derivative.
+%\item Use examples from \cite{jaini_polynomial_flow_2019} to show that this is %not so mystical at all (cdf in 1 d case¸)
+% \item conditional version (probably a clean formulation helps with %variational autoencoders)
+%\item Batch normalization as normalizing flow
+%\item See also Peter Abbeel on generative models: \\
+%lectures + papers: https://sites.google.com/view/berkeley-cs294-158-sp20/home \\
 %papers: %https://www.dropbox.com/s/f09vfmfjb9thaef/gm_reading_list.zip?dl=0&file_subpath=%2Fgm_reading_list
  
- 
-\end{itemize}
+
+%\end{itemize}
 
 
 \subsection{Normalizing Flows: basic idea}
@@ -790,22 +794,22 @@ and the Jacobian is diagonal $Df = \text{diag}(e^{\alpha_1} /\left(\tilde \sigma
 \end{align}
 
 \paragraph{Autoregressive flows.}
-The affine linear flow extends to a more general form, which is still triangular, $y_{i} = e^{\alpha_{i}(x_{1:i-1})} x_{i} + \beta_i(x_{1:i-1})$, where $\alpha_{i}$ and $\beta_{i}$ are now functions of $x_{1:i-1} = x_1, \dots x_{i-1}$. 
+The affine linear flow extends to a more general form, which is still triangular, $y_{i} = e^{\alpha_{i}(x_{1:i-1})} x_{i} + \beta_i(x_{1:i-1})$, where $\alpha_{i}$ and $\beta_{i}$ are now functions of $x_{1:i-1} = x_1, \dots, x_{i-1}$. 
 
-More generally, let $h_i(\cdot\,; \alpha_i): \mathbb{R} \rightarrow \mathbb{R}$ be a bijections parametrized by $\theta_i \in \mathbb{R}^{|\theta_{i}|}$. Then a triangular map is called autoregressive flow if it is of the form 
+More generally, let $\tau_i(\cdot\,; \alpha_i): \mathbb{R} \rightarrow \mathbb{R}$ be bijections parametrized by $\theta_i \in \mathbb{R}^{|\theta_{i}|}$. Then a triangular map is called autoregressive flow if it is of the form 
 \begin{align} \label{eq:auto_regressive_flow}
-	y_i =T_i(x_1,\dots, x_i) = h_i(x_i; \gamma_i(x_{1:i-1})), \quad i=1,\dots,d, 
+	y_i =T_i(x_1,\dots, x_i) = \tau_i(x_i; \gamma_i(x_{1:i-1})), \quad i=1,\dots,d, 
 \end{align} 
-with  $\alpha_i = \gamma_i(x_{1:i-1})$. The function $h_i$ is called coupling function or transformer and  $\gamma_i$ is called conditioner function. For $i=1$ the conditioner does not depend on $x$.  So, the conditioner "learns" the parameters for the univarite coupling function $h_i$. 
+with  $\alpha_i = \gamma_i(x_{1:i-1})$. The function $\tau_i$ is called coupling function or transformer and  $\gamma_i$ is called conditioner function. For $i=1$ the conditioner does not depend on $x$.  So, the conditioner "learns" the parameters for the univarite coupling function $\tau_i$. 
 
 As autoregressive flows are triangular, all properties hold -- and they further simplify. In particular for the diagonal element of the Jacobian (\ref{eq:jac_triangular}), $\partial y_i / \partial x_i$ only the derivative of the coupling functions needs to be comupted (keeping the conditioner fixed) in (\ref{eq:auto_regressive_flow}). And similar, the inverse needs to be computed only with respect to the coupling function: from (\ref{eq:inv_triang_rec})
 \begin{align} \label{eq:auto_regressive_flow_inv}
 	T_d^{-1}(y_1,\dots, y_d) 
 	&= t_i^{-1}(T_1^{-1}(y_1), \dots, T_{i-1}^{-1}(y_1, \dots,y_{i-1} ), y_i) \nonumber \\ 
 	&=t_i^{-1}(x_1\dots x_{i-1}, y_i) \nonumber \\
-	&=h_i^{-1}(y_i; \gamma_i(x_1\dots x_{i-1})),
+	&=\tau_i^{-1}(y_i; \gamma_i(x_1\dots x_{i-1})),
 \end{align}
-where in the last line the specific form of (\ref{eq:auto_regressive_flow}) was used. The inverse has still a recursive form as $h_i^{-1}(y_i; \gamma(x_1, \cdots, x_{i-1}))$ can only be computed once the $x_1, \dots x_{i-1}$ (i.e. the inverses  $h_1^{-1}, h_{i-1}^{-1}$) are known. 
+where in the last line the specific form of (\ref{eq:auto_regressive_flow}) was used. The inverse has still a recursive form as $\tau_i^{-1}(y_i; \gamma_i(x_1, \cdots, x_{i-1}))$ can only be computed once the $x_1, \dots x_{i-1}$ (i.e. the inverses  $\tau_1^{-1}, \tau_{i-1}^{-1}$) are known. 
 
 The property that the Jacobian and the inverse need not be evaluated for the conditioner functions is exploited in constructing autoregressive flows: the conditioner can be any "crazy" function (neural network) and only the coupling function needs fine tuning in order to be strictly increasing (bijective). From a theoretical point of view this is also beneficial as one can exploit the universal approximation theorem for the conditioner part and the universality property needs to shown only for the univariate coupling functions. \cite{jaini_polynomial_flow_2019, wehenkel_unconstraint_monotonic_neural_networks, huang_2018_neural_autoregressive_flows}
 
@@ -824,7 +828,7 @@ and the diagonal elements of the Jacobian
 \begin{align}
 \begin{pmatrix}
 1_\ell & 0 \\
-\cdot & \text{diag} \left(e^{\alpha(x_{1:\ell})}\right),
+\cdot & \text{diag} \left(e^{\alpha(x_{1:\ell})}\right)
 \end{pmatrix}
 \end{align}
 and therefore $\ln |\det Df| = \sum_{i=1}^{d-\ell}  \alpha_i(x_{1:\ell})$, that is the sum over all components of the vector-valued function $\alpha$.
@@ -839,7 +843,7 @@ To see that this is indeed an  autoregressive flow write equivalently
 where $\alpha_i, \beta_i$ are the $i$-th components of $\alpha, \beta \in \mathbb{R}^{d-\ell}$, respectively.
 As $x_{1:\ell}$ in (\ref{eq:real_nvp}) are not transformed, in practice compositions with alternative permutations are used, $f = \dots f_\pi \circ  f_{NVP} \circ f_\pi \circ f_{NVP} $. After the permutation $f_\pi$ untouched $x$ parts enter a non trivial map. The coupling function in \ref{eq:real_nvp} is affine linear. The unusual exponential map ensures invertiblity for any $\alpha(x_1:\ell)$. Therefore there are no constraints on the underlying neural network for the conditioner. 
 
-\paragraph{Masked autoregressive flow (MAF)\cite{papamakarios_2017_maf}.}  The conditioners $\alpha, \beta$ in real-NVP are all the same for $i > \ell + 1$ as the take as input $x_{1:\ell}$ and therefore are not of the most general form of (\ref{eq:auto_regressive_flow}). MAF generlizes the parametrization of the conditioners in this direction:
+\paragraph{Masked autoregressive flow (MAF)\cite{papamakarios_2017_maf}.}  The conditioners $\alpha, \beta$ in real-NVP are all the same for $i > \ell + 1$ as the take as input $x_{1:\ell}$ and therefore are not of the most general form of (\ref{eq:auto_regressive_flow}). MAF generalizes the parametrization of the conditioners in this direction:
 \begin{align} \label{eq:real_nvp}
 y_{i} &= x_i \exp(\alpha_i(x_{1:i-1})) + \beta_i(x_{1:i-1}),
 \end{align}
@@ -848,18 +852,149 @@ where for each component there is now a pair of conditioner functions $\gamma_i=
 \begin{align} \label{eq:maf}
 	x_{i} &= (y_i -  \beta_i(x_{1:i-1})) \exp(\alpha_i(x_{1:i-1})). 
 \end{align}
-While MAF is a straightforward extension of the conditioner over real-NVP, it requires to set up $2d$ neural networks $(\alpha_i, \beta_i), ~ i=1\dots d$ as opposed to only two in real-NVP ($\alpha, \beta$)\footnote{One could express the pair of neural networks $\alpha, \beta: \mathbb{R}^\ell \rightarrow \mathbb{R}^{d - \ell}$ by doubling the output dimension and compute one neural network $\gamma: \mathbb{R}^\ell \rightarrow \mathbb{R}^{2(d - \ell)}$ and then use slicing in the coupling function (which can be computed vectorized). Typically one enlarges the network in this case to have a similar amount of parameters as as when working with two networks in order to ensure similar expressiveness. Similar for MAF $\gamma_i: \mathbb{R}^{i-1} \rightarrow \mathbb{R}^{2}$. But then there are still $d$ of such combined networks.}. So for a single function evaluation of (\ref{eq:maf}) one needs $2d$ neural network forward passes, which can be cumbersome for large $d$.  However, one can combine these $2d$ neural networks into a single \textit{masked} neural network \cite{germain_2015_made}.
+While MAF is a straightforward extension of the conditioner over real-NVP, it requires to set up $2d$ neural networks for the conditioner functions  $\gamma_i = (\alpha_i, \beta_i), ~ i=1\dots d$ as opposed to only two in real-NVP ($\alpha, \beta$)\footnote{One could express the pair of neural networks $\alpha, \beta: \mathbb{R}^\ell \rightarrow \mathbb{R}^{d - \ell}$ by doubling the output dimension and compute one neural network $\gamma: \mathbb{R}^\ell \rightarrow \mathbb{R}^{2(d - \ell)}$ and then use slicing in the coupling function (which can be computed vectorized). Typically one enlarges the network in this case to have a similar amount of parameters as  when working with two networks in order to ensure similar expressiveness. Similar for MAF $\gamma_i: \mathbb{R}^{i-1} \rightarrow \mathbb{R}^{2}$. But then there are still $d$ of such combined networks.}. So for a single function evaluation of (\ref{eq:maf}) one needs $2d$ neural network forward passes, which can be cumbersome for large $d$.  However, one can combine these $2d$ neural networks into a  \textit{single} masked conditioner neural network.
 
-\paragraph{Masked conditioner networks}
+\paragraph{Masked conditioner neural networks \cite{germain_2015_made}.} The following method is sometimes called MADE after the title of \cite{germain_2015_made} although it is used in the context of normalizing flows.
+
+The aim is to construct a conditioner network for all functions $\gamma = (\gamma_1, \dots,\gamma_d)$ in one forward pass of a single neural network.
+For simplicity consider first the case where the coupling function only requires one scalar parameter from the conditioner network, $\gamma_i:  \mathbb{R}^{i-1} \rightarrow \mathbb{R}$ (the map $\gamma_1$ is interpreted as constant parameters). And therefore we the vector valued function assumes the form\footnote{\label{fn:mask_dims}Strictly speaking  $\gamma:  \mathbb{R}^{d-1} \rightarrow \mathbb{R}^d$, because $\gamma_d$ only depends on $x_{1:d-1}$. However, we will the more general map $\mathbb{R}^{d} \rightarrow \mathbb{R}^d$ (as this eventually allows for order agnostic training). This implies that it must be ensured that $x_d$ does note contribute.} $\gamma = (\gamma_1, \dots,\gamma_d):  \mathbb{R}^{d} \rightarrow \mathbb{R}^d$ with image $\alpha = \gamma(x) =(\gamma_1, \gamma_2(x_1), \gamma_3(x_1,x_2) \dots, \gamma_d(x_{1:d-1}))= (\alpha_1,\dots, \alpha_d)$.
+
+ A deep neural network (multi layered perceptron, MLP) is of the form
+ \begin{align}\label{eq:masked_conditioner_nn}
+ 	\gamma: ~\cont{\mathbb{R}}{x}^d \xrightarrow{f^1} \cont{\mathbb{R}}{h^1}^{d_1} \xrightarrow{f^2} \cont{\mathbb{R}}{h^2}^{d_2} \xrightarrow{f^3} \dots \xrightarrow{f^L} \cont{\mathbb{R}}{\alpha}^d \nonumber 
+ 	\\ 
+ 	f^\ell: h^\ell= a^\ell\left((M^\ell\odot W^\ell)h^{\ell-1} + b^\ell\right),
+ \end{align}
+ where $h^\ell \in \mathbb{R}^{d_\ell}$ is called hidden layer  and a component of it $h^\ell_i$ is called neuron. $a^\ell$ is the activation function,  $W^\ell\in \mathbb{R}^{d_{\ell} \times d_{\ell-1}}$ the weights, and  $b^\ell \in \mathbb{R}^{d_\ell}$ the biases of layer $\ell$. Identify $x\equiv h^0$ (and its $d \equiv d_0$) and $\alpha \equiv h^L$ (and its $d \equiv d_L$) and thus  the final activation $a^L$ must match the requirements of the coupling functions. Note that $d_0$ is dictated by the feature dimension and $d_L$ by the coupling function, so the free dimesional hyperparameters are $d_1, \dots, d_{L-1}$. The aim is to construct a binary Matrix (\textit{mask}) $M^\ell \in \{0,1\}^{d_\ell \times  d_{\ell-1}}$, which satisfies the autoregressive property \cite{germain_2015_made}, 
+ \begin{align}\label{eq:mask_autoregressive_property}
+ 	\alpha_i = h^L_{i} = h^L_{i}(x_{1:i-1}),
+ \end{align}
+ that is to ensures that each neuron output $i$  only depends (implicitly) on $x_{1:i-1} = h^0_{ 1:i-1}$.
+ 
+ First, each neuron $1\dots d_\ell$ of layer $\ell$ is assign an integer number ($\ell=0, ...\dots L$; the input layer $\ell=0$ is included). For each layer   this can be written as
+\begin{align} \label{eq:mask_assignment_rule}
+ m^0  &= (1, \dots, d), \nonumber \\
+ m^\ell &= (m^\ell(0), \dots, m^\ell(d_\ell)), \quad 1 \leq \ell \leq L-1, \nonumber\\ 
+ &\quad ~~ m^\ell(i) \in \{\min(m^{\ell-1}),\dots, d-1\}, \nonumber \\  
+m^L &= (1, \dots, d).
+ \end{align}
+This assignment rules are also called \textit{connectivity constraints}. The mask is then constructed as
+\begin{align}\label{eq:mask_construction_rule}
+ 	M^\ell_{i,j} &= \begin{cases}
+ 	1 \quad  \text{if } m^{\ell}(i) \geq m^{\ell-1}(j)\\ 
+ 	0 \quad  \text{else}, 
+ 	\end{cases}\quad \ell=1,\dots, L-1, \nonumber\\
+ 	M^L_{i,j} &= \begin{cases}
+ 	1 \quad  \text{if } m^{L}(i) > m^{L-1}(j) \\ 
+ 	0 \quad  \text{else,} 
+ 	\end{cases}
+\end{align}
+where the mask for the output layer $\ell=L$ requires a strict inequality sign.
+
+The assigment rule (\ref{eq:mask_assignment_rule})
+for the input layer $\ell=0$ (consisting of $x\in \mathbb{R}^d$) maps each neuron to its index $m^0(i) = i, ~ i=1,\dots,d$. And similar for the output layer (which will be generalized later on for more complex coupling functions).
+For each hidden layer $\ell, ~1 \leq \ell \leq L-1$ the assignment per neuron  $m^\ell(i), ~ i=1,\dots, d_\ell$ is typically randomly sampled from a uniform distribution. It takes values $m^\ell(i) \in \{\min(m^{\ell-1}),\dots, d-1\}$. The choice of the lower limit $\min(m^{\ell-1})$ with respect to the previous layer avoids unconnected units\footnote{If there was a neuron $k$ at layer $\ell$ such that $m^\ell(k) < \min(m^{\ell-1})$ then the corresponding mask $M^\ell_{k,i} = 0, ~ i = 1, \dots, d_{\ell-1}$. And thus there is no connection from the previous layer $\ell-1$ to that neuron.}. The choice of of the upper limit ensures that only components $x_{1:d-1}$ and not $x_d$ propagate through the network necessary for the autoregressive property\footnote{The first mask $M^1_{i,d} = 0, ~i=1,\dots,d_1$ has no connection to $x_d$ and thus $M^1$ already filters out all contributions from $x_d$ and therefore the whole NN does not depend on $x_d$. This can be seen from  $m^0(d) = d$ and $m^1(i) < d$ for any $i$ by construction. Therefore $m^1(i) < m^0(d) = d$. Thus the requirements of footnote \ref{fn:mask_dims} are met.}.
+
+We need to show that this construction indeed fulfills the autoregressive property (\ref{eq:mask_autoregressive_property}).
+Consider the output of neuron $i$ of the output layer
+\begin{align}
+	h^L_i &= a^L\left(\sum_{j=1}^{d_{L-1}}(M^L\odot W^L)_{i,j} h^{L-1}_j + b^L_i\right) \nonumber \\ 
+		 &=a^L\left(\sum_{j=1}^{d_{L-1}}M_{i,j} ^L W^L_{i,j} h^{L-1}_j + b^L_i\right) 
+\end{align}
+First consider the compontent $i=1$. From (\ref{eq:mask_assignment_rule}) it follows that $m^L(1) = 1$, and together with the strict inequality of (\ref{eq:mask_construction_rule}) the corresponding mask $M^L_{1, j} = 0, ~ j=1\dots, d_{L-1}$. Therefore $h^L_i = a_L(b^L_1)$ does not depend on $x$ and only the constant (yet trainable parameter for a neural network) contributes. 
+
+Now pick an $2\leq i \leq d_L$ with $m^L(i)=i$. Assume that there is an $x_k, ~k \geq i$, which contributes to $h^L_i$. So there must be an unmasked path in the neural network from $h^L_i$ to $x_k$. Therefore there is a sequence of neurons 
+$i_{L-i}, i_{L-2}, \dots,  i_1$ on the intermediate layers $L-1, L-2, \dots, 1$ for which
+\begin{align}
+i = m^L(i) > m^{L-1}(i_{L-1}) \geq m^{L-2}(i_{L-2}) \dots \geq m^{1}(i_{1}) \dots \geq m^{0}(k) = k. \nonumber
+\end{align}
+And thus $i>k$, which contradicts the assumption $k\geq i$. Therefore $h^L_i$ can at most depend on $x_{1:i-1}$.
+
+So far the assumption was made that each coupling function only a scalar output from the conditioner network  $\gamma_i:  \mathbb{R}^{i-1} \rightarrow \mathbb{R}$, and thus the network is a map $\gamma = (\gamma_1, \dots,\gamma_d):  \mathbb{R}^{d} \rightarrow \mathbb{R}^d$. This \textbf{generalizes to any number of parameters }of the coupling function. Require that  $\gamma_i:  \mathbb{R}^{i-1} \rightarrow \mathbb{R}^{p_i}$, where $p_i$ is the number of parameters provided by the conditioner function $i$ to coupling function $i$. Then, the joint masked conditioner neural network is a map
+\begin{align}
+	\gamma = (\gamma_1, \dots,\gamma_d):  \mathbb{R}^{d} \rightarrow \mathbb{R}^{p_1} \times \dots \times \mathbb{R}^{p_d} 
+\end{align}
+This can be easily achieved by adapting the assignment rules of the output layer in (\ref{eq:mask_assignment_rule})
+\begin{align}\label{eq:mask_general_output_assignement}
+	m^L = (\underbrace{1,\dots, 1}_{\times p_1},  \underbrace{2,\dots, 2}_{\times p_2} \dots, \underbrace{d, \dots, d}_{\times p_d})
+\end{align}
+and use the output together with appropriate slicing in the coupling function.
+\\
+\\
+\textbf{Example MAF:}  MAF requires two parameters for the coupling function in (\ref{eq:maf}), $\gamma_i(x_{1:i-1}) = (\alpha_i(x_{1:i-1}), \beta_i(x_{1:i-1}))\in \mathbb{R}^2$. Thus the conditioner network for MAF can be constructed by setting $p_i=2, ~i=1,\dots, d$ in  (\ref{eq:mask_general_output_assignement}).
+
+There are two extensions to masked conditioner networks \cite{germain_2015_made}, 
+\begin{itemize}
+	\item \textbf{Order agnostic training}. As with normalizing flows in general the natural ordering of the input $x_{1:d}$ is a constraint to the result. One could therefore in change the assignment rule for the input layer in (\ref{eq:mask_assignment_rule}) and randomly sample $m^0  = (m^0(1), \dots, m^0(d))$.  \cite{germain_2015_made} suggest to randomly sample \textit{at each minibatch iteration}, which essentially gives an ensemble of models (as many models as there are orderings).
+	\item \textbf{Connectivity agnostic training}. In this approach also the assignment rules for the hidden layers $m^\ell$ in (\ref{eq:mask_assignment_rule}) are re sampled \textit{at each minibatch iteration}.
+\end{itemize}
+
+Technical note: the networks hyperparameters are the depth of the network (number of hidden layers $L-1$) and the with of the hidden layers $d_\ell, ~\ell \in 1,\dots,L-1$. In particular if the with $d_\ell < d-1$ together with the randomly assigned connectivity constraints not all $x$ propagate to the output layer. Thus it seems to be important that the hidden layers  should be wide enough (with respect to the input dimension $d$).
+
+
+ 
  
 \paragraph{Neural autoregressive flow (NAF) \cite{huang_2018_neural_autoregressive_flows}.} 
+So far only affine coupling functions were used. NAF constructs a more expressive coupling function by a neural network. While in practice this model is hard to train (which can be improved \cite{cao_2019_block_naf}) it is conceputally interesting and is most importantly universal. As the coupling function needs to be strictly increasing (to be invertible), the neural network needs to
+satisfy constraints: 
+
+\begin{proposition}{\cite{huang_2018_neural_autoregressive_flows}}
+	Using strictly positive weights and strictly
+	monotonic differentiable activation functions for $h_\ell$ is sufficient for the
+	entire network to be strictly increasing.
+\end{proposition}
+First note that the composition of strictly increasing functions is again strictly increasing. Specifically for a neural network with layer $h^\ell, \ell=1,\dots, L$ with  $h^0=x$ and $h^L=y$ we have for the derivative of the components
+\begin{align} \label{proof:strict_monotonic_nn}
+	\frac{\partial y_i}{\partial x_j} = \frac{\partial h^{L}_i}{\partial h^{L-1}_l} 
+	\frac{\partial h^{L-1}_l}{\partial h^{L-2}_m}  \dots 
+	\frac{\partial h^1_k}{\partial x_j}
+\end{align}
+(using einstein sum convention). If $h^\ell = a^\ell(W^\ell h^{\ell -1} + b^\ell)$ with some strictly monotonic activation function $a^\ell$ and strictly positive weights $W^\ell_{i,k} > 0$. Then $\partial h^\ell  / \partial h ^{\ell -1} > 0$. But then each term in the sum of (\ref{proof:strict_monotonic_nn}) is greater zero
+and thus  $\partial y_i/\partial x_j > 0$. The following networks assume different parametrizations but the proof remains valid.
+
+NAF proposes two versions for the couping functions $\tau_i(x_i, \gamma_i(x_{1:i-1}))$. \textit{Deep sigmoidal flows} (DSF)
+\begin{align} \label{eq:dsf}
+	\tau_i: y_i = \sigma^{-1}\left(w_i^T \cdot \sigma \left(W_i  x_i + b_i\right)   \right),
+\end{align}
+where the parameters are obtained from the conditioner (e.g. by a masked conditioner network), $\gamma_i(x_{1:i-1}) = (w_i, W_i, b_i)$, with $w_i, W_i, b_i \in \mathbb{R}^{d_1}$, with $d_1$ beeing a hidden dimension.
+The neural network assumes the form of a standard affine linear function together with a attention-like \cite{bahdanau_2016_attention} linear combination induced by $w_i, 0<w_{k, i}<1, \sum_k w_{k, i}=1, ~ k=1 \dots d_1, ~i=1\dots d$. The strict inequality sign rather comes from the requirement on the network to ensure strict increasing the from the convex sum. This requirement also puts the constraint $W_{k, i} > 0$. 
+These constraints must be satisfied by the conditioner via a suitable choice for the activation function in the output layer (by applying e.g. softmax or softplus functions).
+$\sigma$ and $\sigma^{-1}$ is the sigmoid function and its inverse (logit function), which are evaluated component wise. Both are strictly increasing and the logit function is used to assure that $y_i$ can take any value over the real line. 
+
+The component wise definition of $\tau_i, i=1,\dots,d$ can be combined (vectorized) into one single neural network\footnote{In practice the vectorized version is not used as it is more tedious to construct the matrices from the conditioner than calling one function $d$ times. Furthermore, vectorization is less important as there are no parameters to optimize for this coupling function neural network.},
+\begin{align}
+\tau: y = \sigma^{-1}\left(w^T \cdot \sigma \left(W  x + b\right)   \right),
+\end{align}
+with $w_i, W_i, b_i \in \mathbb{R}^{d_1\times d}$.
+The individual conditioner outputs, $\gamma_i(x_{1:i-1}) = (w_i, W_i, b_i)$ are stacked in to matrices $W = (W_1, \dots W_d), w = (w_1, \dots w_d), b = (b1, \dots, b_{d})$ and a vector\footnote{Note that we there is indeed a rather unorthodox "bias matrix", $b_i \in \mathbb{R}^{d_1\times d}$ from incorporating attention.}.
+
+Note that this neural network for the coupling function has \textit{no} trainable parameters (these are trained only in the conditioner network). 
+
+The diagonal element of the Jacobian  is given by 
+\begin{align}
+	\frac{\partial y_i}{\partial x_i} = \left\{ {\sigma^{-1}}'\left(\sum_{k=1}^{d_1}w_{k,i}  \sigma \left(W_{k,i}  x_i + b_{k,i}\right)   \right)\right\} 
+	\left\{\sum_{k=1}^{d_1} w_{k,i}  \sigma' \left(W_{k,i}  x_i + b_{k,i}\right) W_{k,i}   \right\}
+\end{align}
+However the inverse cannot be computed analytically. It needs to be computed numerically  for each $y_i$ on the real line\footnote{Given $y_i$, find numerically the root of the functon $x_i \mapsto y_i - \tau_i(x_i, \gamma_i(x_{1:i-1}))$ keeping $x_{1:i-1}$ fixed.} together with the general formular (\ref{eq:auto_regressive_flow_inv}).
+
+The \textit{deep dense simoidal flow } network proposed in \cite{huang_2018_neural_autoregressive_flows} assumes for a component of the coupling function the form
+\begin{align}
+	 	\tau_i&: ~\cont{\mathbb{R}}{x} \xrightarrow{f^1} \cont{\mathbb{R}}{h^1}^{d_1} \xrightarrow{f^2} \cont{\mathbb{R}}{h^2}^{d_2} \xrightarrow{f^3} \dots \xrightarrow{f^L} \cont{\mathbb{R}}{y} \nonumber 
+	\\ 
+	f^\ell&: h^\ell= \sigma^{-1}\left\{(w^\ell \cdot \sigma \left(a^{\ell} \odot W^\ell h^{\ell -1}  + b^\ell\right)\right\} , 
+\end{align}
+where $h^0 = x$ and $h^L = y$, and $w^\ell \in \mathbb{R}^{d_\ell \times d_\ell}, ~ W^\ell \in \mathbb{R}^{d_\ell \times d_{\ell-1}}, ~ a_\ell , b_\ell \in \mathbb{R}^{\ell}$. The requirement for strictly increasing are all parameters (except $b^\ell$) to be strictly positive. For the attention mechanism to work: $\sum_j w^\ell_{i,j} = \sum_j w^\ell_{i,j}=1$. Again these constraints must be assured by the conditioner. 
+Note that this is not a mere stacking of a deep sigmoidal flow (\ref{eq:dsf}) as this would induce  "bottlenecks". Because in (\ref{eq:dsf}) the output is a scalar.
+
+The diagonal Jacobian elements are tedious but straight forward to compute (see Appendix C of \cite{huang_2018_neural_autoregressive_flows}). As a technical note,  they  may become numerically unstable and one has to resort to the \textit{Log-Sum-Exp} trick.
+
 
 \paragraph{Sum-of-squares polynomial Flow (SOS) \cite{jaini_polynomial_flow_2019}.}
-So far only affine coupling functions were used. In order to obtain more expressive coupling functions a more flexible strictly increasing coupling function is constructed from polynomials. The basic idea is to obtain a positive function by squaring a polynomial (these squared polynomials can be again expanded with some coefficients) and then construct a strictly increasing function by integrating it. Generally,
+In order to obtain a flexible (strictly increasing) coupling functions  SOS constructs  one from polynomials. The basic idea is to obtain a positive function by squaring a polynomial (these squared polynomials can be again expanded with some coefficients) and then construct a strictly increasing function by integrating it. Generally,
 \begin{proposition}{\cite{jaini_polynomial_flow_2019}}
 	A univariate real polynomial is increasing iff it can be written as
 	\begin{align}\label{eq:sum_of_squares_flow}
-		h (x; a, b) = b + \int_0^x\sum_{j=1}^k \left(\sum_{i=0}^r a_{i, j} u^i \right) ^2 \, du,
+		\tau (x; a, b) = b + \int_0^x\sum_{j=1}^k \left(\sum_{i=0}^r a_{i, j} u^i \right) ^2 \, du,
 	\end{align}
 	with $b\in \mathbb{R},  a\in\mathbb{R}^{(r+1)\times (k)}$. It is strictly increasing iff it is not constant.
 	Furthermore let C be the space of real univariate continuous functions, equipped with the topology of compact convergence. Then, the set of increasing polynomials is dense
@@ -868,7 +1003,7 @@ So far only affine coupling functions were used. In order to obtain more express
 The hyperparameter $r\in \mathbb{N}$ is called the degree of the polynomial, and $k\in \mathbb{N}$  is called number of polynomials
 A autoregressive flow can be readily constructed by
 \begin{align}
-	y_i = h_i(x_i, a_i, b_i) = h(x_i, a_i(x_{1:i-1}), b_i(x_{1:i-1})), 
+	y_i = \tau_i(x_i, a_i, b_i) = \tau(x_i, a_i(x_{1:i-1}), b_i(x_{1:i-1})), 
 \end{align}
 with the coupling function (\ref{eq:sum_of_squares_flow}) and 
 $\gamma_i(x_{1:i-1}) = (a_i(x_{1:i-1}), b_i(x_{1:i-1}))$ can be approximated by e.g., a masked conditioner network. 
@@ -894,15 +1029,40 @@ Also note that for $r=0$ SOS reduces to the affine couling function.
 	\item For the \textbf{coupling function} it is enough to construct univariate (strictly) increasing functions. This can be achieved by care carefully designing a neural network as in NAF. More generally this can also achieved by integrating non-negative functions \cite{wehenkel_unconstraint_monotonic_neural_networks} as in the Sum-of-squares polynomial flow. 
 	\item While such constructions are necessary to assure universality they have a drawback compared to affine coupling functions (or other simple, yet analytically invertible coupling functions): for sampling they typically need to be inverted numerically (for each $y_i$ in one dimension respectively). If there are more sampling steps then inference steps, then one could also learn the $f^{-1}$ rather than $f$ like in the inverse autoregressive flow (IAF) \cite{kingma_2016_iaf}. If both, efficient sampling and density estimates is important then \cite{oord_2017_parallel_wavenet} train a student network for $f^{-1}$ with $f$ as a teacher network.
 \end{itemize}
+
+Alternatively, the coupling function may be constructed by a superposition of known cumulative distribution functions (CDF) to ensure strictly increasing  For images modelling the conditioner via masked autoregression is not appropirate. In this case conditioners based on convolutional neural networks are constructed. \cite{ho_2019_flow_pp}. 
+
 \subsection{Conditional probabilities}
-\cite{papamakarios_2017_maf}
+Up until now we considered only transformations on the joint pdfs from one propability distribution $p_X$, to another (base) distribution $p_Y$ via a function $f: X\rightarrow Y$ such that $p_X(x) = p_Y(f(x)) |\det Df(x)|$. 
+
+
+In practice one would often learn such a map for conditional probabilities $p(x|x')$ of a random variables $x\in\mathbb{R}^d$ conditioned on random variables $x' \in \mathbb{R}^{d_c}$. So the aim is to learn a function $f: (X;X') \rightarrow Y$ such that
+\begin{align}
+p_X(x|x') = p_Y(f(x;x')) |\det D_xf(x;x')| \label{eq:pdf_trafo_inv}, 
+\end{align}
+where the $x'$ serve as function parameters and the jacobian is only evaluated with respect to $x$
+
+
+The extension of normalizing flows is straightforward  
+\cite{papamakarios_2017_maf}. Autoregressive flows (\ref{eq:auto_regressive_flow}) generalize
+\begin{align} 
+y_i =T_i(x_1,\dots, x_i) = \tau_i(x_i; \gamma_i(x_{1:i-1}, x')), \quad i=1,\dots,d, 
+\end{align} 
+and the conditioner function is now allowed to depend on \textit{all} $x'$ in addition to the subset $x_{1:i-1}$ of x as demanded by the autoregressive (tringualar) property. Thus, one only needs to adapt the conditoner to allow more variables. In particular the masked conditioner networks generalize readily. The input layer (\ref{eq:masked_conditioner_nn}) in is now of dimension $\mathbb{R}^{d_c + d}$ in 
+and the connectivity constraints for the input layer (\ref{eq:mask_assignment_rule}) assumes the form 
+\begin{align}
+	m^0  = (\underbrace{0, \dots, 0}_{\times d_c}, 1, \dots, d),
+\end{align}
+in other words the conditioning set comes \textit{before} the other random variables. The rest remains unchanged. More formally one could also extend the defintion of triangular maps keeping its properties \footnote{A map $T=(T_1, \dots, T_d): \mathbb{R}^{d_c + d}  \rightarrow \mathbb{R}^d $ is called triangular if $T_1$ is a function of $(x', x_1)$, $T_2$ a function of $(x', x_1, x_2)$, and so on: $T_i$ is a function of $(x', x_1,\dots, x_i)$. A triangular map is called (strictly) increasing if every component $T_i$ is (strictly) increasing with respect to the variable $x_i$}.
 
 \subsection{Dequantization}
-The theory assumes continuous random variables. However, in practice often discrete data occur. Assume that the input data data are count data $x_i \in \mathbb{N}$. Instead of the real data one adds uniform noise, $x_i' =  x_i + Unif(-1/2, 1/2))$ and feeds that data into the flow algorithm. This process is called dequantization.
+The theory assumes continuous random variables. However, in practice often discrete data occur. Assume that the input data data are count data $x_i \in \mathbb{N}$. Instead of the real data one adds uniform noise, $x_i' =  x_i + Unif(-1/2, 1/2))$ and feeds that data into the flow algorithm. This process is called dequantization \cite{theis_2015_dequant, ho_2019_flow_pp}.
 
-\section{Variational Autoencoders}
+\section{Variational autoencoders}
 \cite{Kingma_2019_AnIntroductionToVariationalAutoencoders}
 http://krasserm.github.io/2019/03/14/bayesian-neural-networks/
+\section{Generative autoregressive models}
+\section{Diffusion models}
 
 
 \section{Time Series Neural Networks}
@@ -913,6 +1073,7 @@ Common practices for time series modelling
 	\item \textbf{Metrics for evaluation} \textit{Continuous Ranked Probability Score} (CRPS) for probabilistic time series models
 	\item \textbf{Dequantization:} corresponds to adding noise (e.g. from a uniform distribution) for disrecte data when using models that require contineous data (eg. normalizing flow models).
 	\item \textbf{Categorical features:} use embeddings 
+	\item Use fourier components 
 \end{itemize}
 Time series can be understood as subclass of sequence models. This section summarizes explicit time series models.
 \paragraph{LSTNet.} This network \cite{lstnet_2017} aims to model long and short term patterns by combining neural net components with an autoregressive model. A prediction at time step $t$ given by
