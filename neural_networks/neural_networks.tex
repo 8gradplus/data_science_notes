@@ -654,6 +654,11 @@ Fortunately there is theoretical support,
 \begin{theorem}{\cite{Bogachev_2005, jaini_polynomial_flow_2019}} \label{thm:bogachev}
 	For any two densities $p_X$, $p_Y$ over $X=Y=\mathbb{R}^d$ there exists a unique increasing triangular map $T: X \rightarrow Y$ such that $p_Y = T_*p_X$.
 \end{theorem}
+Triangular maps are in fact rather intuitive. Each multi variate pdf can be decomposed in $d$ univariate conditional pdfs $p(x_i|x_{1:i-i}), ~ i=1,\dots,d$,
+\begin{align}
+	p(x) = p(x_1) p(x_2|x_1)\dots p(x_d|x_{1:d-1})
+\end{align}
+Triangular maps then map each of this conditional pdf individually, which can be always done as guaranteed by the theorem.
 
 Consider some properties of triangular maps.
 First, the Jacobian of a triangular map is triangular because $\partial T_i /\partial x_j = 0 \text{ for } j > i$ and therefore the Jacobian determinant can be computed from the diagonal elements $\det DT = \prod_i \partial T_i /\partial x_i$. 
@@ -1040,7 +1045,7 @@ In practice one would often learn such a map for conditional probabilities $p(x|
 \begin{align}
 p_X(x|x') = p_Y(f(x;x')) |\det D_xf(x;x')| \label{eq:pdf_trafo_inv}, 
 \end{align}
-where the $x'$ serve as function parameters and the jacobian is only evaluated with respect to $x$
+where the $x'$ serve as function parameters and the jacobian is only evaluated with respect to $x$.
 
 
 The extension of normalizing flows is straightforward  
@@ -1049,7 +1054,7 @@ The extension of normalizing flows is straightforward
 y_i =T_i(x_1,\dots, x_i) = \tau_i(x_i; \gamma_i(x_{1:i-1}, x')), \quad i=1,\dots,d, 
 \end{align} 
 and the conditioner function is now allowed to depend on \textit{all} $x'$ in addition to the subset $x_{1:i-1}$ of x as demanded by the autoregressive (tringualar) property. Thus, one only needs to adapt the conditoner to allow more variables. In particular the masked conditioner networks generalize readily. The input layer (\ref{eq:masked_conditioner_nn}) in is now of dimension $\mathbb{R}^{d_c + d}$ in 
-and the connectivity constraints for the input layer (\ref{eq:mask_assignment_rule}) assumes the form 
+and the connectivity constraints for the input layer (\ref{eq:mask_assignment_rule}) can be written e.g., as 
 \begin{align}
 	m^0  = (\underbrace{0, \dots, 0}_{\times d_c}, 1, \dots, d),
 \end{align}
