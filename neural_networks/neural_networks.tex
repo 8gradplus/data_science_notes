@@ -23,6 +23,8 @@
 \bibliographystyle{plain}
 \title{Neural Networks}
 \maketitle
+\tableofcontents
+\newpage
 
 Neural Networks have the remarkable property that they are able to improve their performance with more data. In many other methods more data certainly helps, but the performance of the algorthms tends to achieve a plateau upon a certain amount of data. Furthermore nowadays more complex MM architectures can be run. So NN benefit from enhanced computer power because we are able to 1) handle more data 2)build more complex architectures, and 3) NN particularily benefit from more data. A summary of historic as well as recent developments and achievement of NN can be found in Ref. \cite{DBLP:journals/corr/Schmidhuber14}.
 
@@ -991,7 +993,7 @@ The \textit{deep dense simoidal flow } network proposed in \cite{huang_2018_neur
 where $h^0 = x$ and $h^L = y$, and $w^\ell \in \mathbb{R}^{d_\ell \times d_\ell}, ~ W^\ell \in \mathbb{R}^{d_\ell \times d_{\ell-1}}, ~ a_\ell , b_\ell \in \mathbb{R}^{\ell}$. The requirement for strictly increasing are all parameters (except $b^\ell$) to be strictly positive. For the attention mechanism to work: $\sum_j w^\ell_{i,j} = \sum_j w^\ell_{i,j}=1$. Again these constraints must be assured by the conditioner. 
 Note that this is not a mere stacking of a deep sigmoidal flow (\ref{eq:dsf}) as this would induce  "bottlenecks". Because in (\ref{eq:dsf}) the output is a scalar.
 
-The diagonal Jacobian elements are tedious but straight forward to compute (see Appendix C of \cite{huang_2018_neural_autoregressive_flows}). As a technical note,  they  may become numerically unstable and one has to resort to the \textit{Log-Sum-Exp} trick.
+The diagonal Jacobian elements are tedious but straight forward to compute (see Appendix C of \cite{huang_2018_neural_autoregressive_flows}). As a technical note,  they  may become numerically unstable and one has to resort to the \textit{Log-Sum-Exp} trick (see Appendix \ref{log-sum-exp-trick}).
 
 
 \paragraph{Sum-of-squares polynomial Flow (SOS) \cite{jaini_polynomial_flow_2019}.}
@@ -1035,7 +1037,8 @@ Also note that for $r=0$ SOS reduces to the affine couling function.
 	\item While such constructions are necessary to assure universality they have a drawback compared to affine coupling functions (or other simple, yet analytically invertible coupling functions): for sampling they typically need to be inverted numerically (for each $y_i$ in one dimension respectively). If there are more sampling steps then inference steps, then one could also learn the $f^{-1}$ rather than $f$ like in the inverse autoregressive flow (IAF) \cite{kingma_2016_iaf}. If both, efficient sampling and density estimates is important then \cite{oord_2017_parallel_wavenet} train a student network for $f^{-1}$ with $f$ as a teacher network.
 \end{itemize}
 
-Alternatively, the coupling function may be constructed by a superposition of known cumulative distribution functions (CDF) to ensure strictly increasing  For images modelling the conditioner via masked autoregression is not appropirate. In this case conditioners based on convolutional neural networks are constructed. \cite{ho_2019_flow_pp}. 
+Alternatively, the coupling function may be constructed by a superposition of known cumulative distribution functions (CDF) to ensure strictly increasing  For images or sound modeling the conditioner via masked autoregression is not appropriate. In this case conditioners based on convolutional neural networks are constructed \cite{ho_2019_flow_pp, oord_2016_pixel_cnn, oord_2016_wavenet, oord_2017_parallel_wavenet}. 
+
 
 \subsection{Conditional probabilities}
 Up until now we considered only transformations on the joint pdfs from one propability distribution $p_X$, to another (base) distribution $p_Y$ via a function $f: X\rightarrow Y$ such that $p_X(x) = p_Y(f(x)) |\det Df(x)|$. 
@@ -1061,16 +1064,24 @@ and the connectivity constraints for the input layer (\ref{eq:mask_assignment_ru
 in other words the conditioning set comes \textit{before} the other random variables. The rest remains unchanged. More formally one could also extend the defintion of triangular maps keeping its properties \footnote{A map $T=(T_1, \dots, T_d): \mathbb{R}^{d_c + d}  \rightarrow \mathbb{R}^d $ is called triangular if $T_1$ is a function of $(x', x_1)$, $T_2$ a function of $(x', x_1, x_2)$, and so on: $T_i$ is a function of $(x', x_1,\dots, x_i)$. A triangular map is called (strictly) increasing if every component $T_i$ is (strictly) increasing with respect to the variable $x_i$}.
 
 \subsection{Dequantization}
-The theory assumes continuous random variables. However, in practice often discrete data occur. Assume that the input data data are count data $x_i \in \mathbb{N}$. Instead of the real data one adds uniform noise, $x_i' =  x_i + Unif(-1/2, 1/2))$ and feeds that data into the flow algorithm. This process is called dequantization \cite{theis_2015_dequant, ho_2019_flow_pp}.
+The theory assumes continuous random variables. However, in practice often discrete data occur. Assume that the input data data are count data $x_i \in \mathbb{N}$. Instead of the real data one adds uniform noise, $x_i' =  x_i + Unif(0, 1))$ and feeds that data into the flow algorithm. This process is called dequantization \cite{theis_2015_dequant, ho_2019_flow_pp}.
 
 \section{Variational autoencoders}
-\cite{Kingma_2019_AnIntroductionToVariationalAutoencoders}
+
+\cite{Kingma_2019_AnIntroductionToVariationalAutoencoders}\\
 http://krasserm.github.io/2019/03/14/bayesian-neural-networks/
 \section{Generative autoregressive models}
 \section{Diffusion models}
+\cite{weng2021diffusion, dickstein_2015_diffusion, ho_2020_diffusion, rombach_2021_diffusion} \\
+\\
+Note: Diffusion models can be understood as discrete state Markov models \cite{barber}.
+Diffusion models are closely related to so called score based generative models \cite{song_2020_score_sdg,  song_2021_blog_score}.
+This leads to stochastic differential equations (SDE) \cite{oksendal_1992_sde} using Langevin dynamics. There also seems to be a close relation to flow models, which also assume the form of an SDE in the limit of composing infinitely many flows  \cite{normalizing_flow_review_kobyzev_2021}.
 
 
-\section{Time Series Neural Networks}
+
+
+\section{Time Series Neural Network}
 Common practices for time series modelling
 \begin{itemize}
 	\item \textbf{Split time} in context and prediction times
@@ -1098,21 +1109,16 @@ The neural network part models modulations with respect to this baseline model. 
 The convolution shall capture short term dependencies and serves as input for following RNN. The RNN should capture long term time dependencies and even more the recurrent skip network.  Finally both recurrent units are combined by a small dense NN. As input serve only the last hidden state at time $t$ of the RNN (context vector) and the last $p$ hidden states of the recurrent-skip network. Instead of the last two steps also the attention mechanism can be used (which also increases the long term capacity). The authors find similar accuracy within these two approaches.
 
 
-\section{Outlook}
-\begin{itemize}\setlength\itemsep{0em}
-\item Practical tips \cite{2012arXiv1206.5533B, Hinton2012Practical, DBLP:series/lncs/7700} 
-\item Interpretation of NN \cite{2017arXiv170607979M, KinSchAlbMueErhKimDae18}
-\item (Denoising) autoencoder 
-\item Adversarial nets (generative vs. discriminative)
-\item Hopfield networks \cite{ramsauer2020hopfield}
-\item Convolution neural networks 
-\item Hyper parameter tunining using Gaussian processes
-\item eg VGG http://www.robots.ox.ac.uk/~vgg/practicals/cnn/index.html
-\end{itemize}
+\paragraph{Modelling Uncertainties}
+The principal idea is to model the temporal dependencies of a time series via an LSTM or Attention Network. Call this temporal network. The \textit{temporal fusion transformer} then uses the output of the temporal network for point estimates (quantiles) of the uncertainties \cite{google_2019_tft}.  
+ Alternatively one could model a distribution to reflect the uncertainties. \textit{Deep Ar} uses the outputs of the temporal network as parameters of a fixed, parametrized distribution (e.g., the parameters of the negative Binomial distribution for count data) \cite{salinas_2017_deepar}. In order to overcome the limits of fixed distributions the outputs of the temporal network could be fed into a \textit{normalizing flow }\cite{zalando_2020_ts_flows} or a \textit{diffusion model} \cite{zalando_2020_ts_diffusion}. 
+
+
+
 
 \appendix
 \section{Numerics}
-\paragraph{Log-sum-exponent trick.} The logarithm of sum of exponentials may suffer from numerical overflow (due to exponent) or underflow. A numerical stable equivalent is
+\subsection{Log-sum-exponent trick. \label{log_sum_trick}} The logarithm of sum of exponentials may suffer from numerical overflow (due to exponent) or underflow. A numerical stable equivalent is
 \begin{align} \label{log-sum-exp-trick}
 	\ln \sum_i e^{x_i}  =  \ln \sum_i e^{x_i - c} + c, \quad c = \max\{x_i\}, 
 \end{align}
